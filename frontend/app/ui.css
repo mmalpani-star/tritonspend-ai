@@ -50,4 +50,28 @@
   .dashboard-grid { @apply grid gap-5 xl:grid-cols-[1.1fr_0.9fr]; }
   .runway-row { @apply flex items-center justify-between gap-3 rounded-xl bg-[var(--surface-muted)] px-3.5 py-3 text-xs text-[var(--text-muted)]; }
   .runway-row strong { @apply text-[var(--text)]; }
+  .scale-selector { @apply mb-4 flex w-fit rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-1; }
+  .scale-button { @apply rounded-lg px-3 py-2 text-xs font-bold text-[var(--text-muted)] transition hover:text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .scale-button-selected { @apply bg-[var(--surface)] text-[var(--primary)] shadow-sm; }
+  .chart-caption { @apply mb-4 text-xs leading-5 text-[var(--text-muted)]; }
+  .spending-chart { @apply relative flex min-h-64 min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 pl-12; }
+  .chart-axis { @apply absolute bottom-12 left-3 top-4 flex flex-col justify-between text-[10px] text-[var(--text-muted)]; }
+  .chart-bars { @apply flex min-w-0 flex-1 items-end gap-1.5 overflow-x-auto pb-8; }
+  .chart-bar-button { @apply flex min-w-8 flex-1 flex-col items-center justify-end self-stretch rounded-lg px-0.5 pt-2 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .chart-bar-track { @apply flex min-h-40 w-full items-end justify-center rounded-t-md border-b border-[var(--border)] bg-[linear-gradient(to_top,transparent_49%,var(--border)_50%,transparent_51%)]; }
+  .chart-bar { @apply block w-3/4 min-w-2 rounded-t-md bg-[var(--primary)] transition-all; }
+  .chart-bar-button:hover .chart-bar, .chart-bar-button:focus-visible .chart-bar { @apply bg-[var(--primary-strong)]; }
+  .chart-bar-selected .chart-bar { @apply bg-[var(--accent)]; }
+  .chart-label { @apply mt-2 max-w-16 truncate text-[10px] text-[var(--text-muted)]; }
+  .chart-bar-button:hover .chart-label, .chart-bar-button:focus-visible .chart-label { @apply text-[var(--text)]; }
+  .chart-empty { @apply flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center text-sm text-[var(--text-muted)]; }
+  .pagination-row { @apply mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4 text-xs text-[var(--text-muted)]; }
+  .pagination-controls { @apply flex gap-2; }
+  .pagination-controls .secondary-button { @apply px-2.5 py-1.5; }
+  .period-detail { @apply mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4; }
+  .period-detail-title { @apply mt-1 font-display text-lg font-bold text-[var(--text)]; }
+  .period-detail-total { @apply mt-3 font-display text-3xl font-bold tracking-tight text-[var(--primary)]; }
+  .period-detail-meta { @apply mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]; }
+  .weekly-caps { @apply mt-6 border-t border-[var(--border)] pt-5; }
+  .weekly-caps summary { @apply cursor-pointer text-xs font-bold text-[var(--primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
 }
