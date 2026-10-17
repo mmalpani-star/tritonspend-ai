@@ -1,0 +1,77 @@
+@tailwind components;
+
+@layer components {
+  .eyebrow { @apply text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--primary)]; }
+  .hero-title { @apply mt-4 max-w-2xl font-display text-5xl font-bold leading-[1.02] tracking-[-0.05em] text-[var(--text)] sm:text-7xl; }
+  .hero-title span { @apply text-[var(--primary)]; }
+  .hero-copy { @apply mt-6 max-w-xl text-base leading-7 text-[var(--text-muted)] sm:text-lg; }
+  .hero-grid { @apply grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]; }
+  .hero-art { @apply relative hidden min-h-[360px] items-center justify-center overflow-hidden lg:flex; }
+  .orbit { @apply absolute rounded-full border border-[var(--border)]; }
+  .orbit-one { @apply h-72 w-72; }
+  .orbit-two { @apply h-96 w-96 border-dashed; }
+  .art-card { @apply absolute rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl; }
+  .art-card-main { @apply left-1/2 top-1/2 w-56 -translate-x-1/2 -translate-y-1/2; }
+  .art-card-main strong { @apply mt-3 block font-display text-4xl tracking-tight text-[var(--text)]; }
+  .art-card-small { @apply bottom-12 right-2 flex items-center gap-2 px-4 py-3 text-xs font-semibold text-[var(--text)]; }
+  .dot { @apply h-2 w-2 rounded-full bg-[var(--turquoise)]; }
+  .brand-mark { @apply flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--primary)] text-white shadow-lg; }
+  .main-grid { @apply grid items-start gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]; }
+  .panel { @apply rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_18px_50px_-30px_rgba(24,43,73,0.35)] sm:p-7; }
+  .form-panel { @apply lg:sticky lg:top-5; }
+  .panel-heading { @apply mb-5 flex items-start justify-between gap-4; }
+  .panel-title { @apply mt-1 font-display text-2xl font-bold tracking-tight text-[var(--text)]; }
+  .step-badge { @apply rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-bold text-[var(--primary)]; }
+  .field-label { @apply block text-xs font-bold text-[var(--text)]; }
+  .field-label input, .field-label select { @apply mt-2 block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 text-sm font-medium text-[var(--text)] outline-none transition placeholder:text-[var(--stone)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--accent)]; }
+  .field-help { @apply block text-[11px] font-normal text-[var(--text-muted)]; }
+  .secondary-button { @apply inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .primary-button { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[var(--primary-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:cursor-wait disabled:opacity-60; box-shadow: 0 10px 25px color-mix(in srgb, var(--primary) 20%, transparent); }
+  .icon-button { @apply flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .habit-card { @apply rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4; }
+  .check-chip { @apply inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--text-muted)] transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]; }
+  .check-chip input { @apply accent-[var(--primary)]; }
+  .check-chip-active { @apply border-[var(--primary)] text-[var(--primary)]; }
+  .error-box { @apply flex flex-col gap-1 rounded-2xl px-4 py-3 text-sm text-[var(--danger)]; border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  .empty-result { @apply flex min-h-[520px] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--surface)] p-8 text-center; }
+  .empty-icon { @apply mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--primary)]; }
+  .empty-result h2 { @apply font-display text-2xl font-bold text-[var(--text)]; }
+  .empty-result p { @apply mt-3 max-w-sm text-sm leading-6 text-[var(--text-muted)]; }
+  .empty-rule { @apply mt-8 flex w-full max-w-sm items-center gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--stone)]; }
+  .empty-rule span { @apply h-px flex-1 bg-[var(--border)]; }
+  .metric-card { @apply flex min-h-32 flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm; }
+  .metric-label { @apply text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--text-muted)]; }
+  .metric-card strong { @apply mt-3 font-display text-3xl font-bold tracking-tight text-[var(--text)]; }
+  .metric-note { @apply mt-1 text-xs text-[var(--text-muted)]; }
+  .status-pill { @apply inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold; }
+  .status-good { @apply text-[var(--success)]; background: color-mix(in srgb, var(--success) 10%, transparent); }
+  .status-danger { @apply text-[var(--danger)]; background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  .notice-danger { @apply flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--danger)]; border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  .dashboard-grid { @apply grid gap-5 xl:grid-cols-[1.1fr_0.9fr]; }
+  .runway-row { @apply flex items-center justify-between gap-3 rounded-xl bg-[var(--surface-muted)] px-3.5 py-3 text-xs text-[var(--text-muted)]; }
+  .runway-row strong { @apply text-[var(--text)]; }
+  .scale-selector { @apply mb-4 flex w-fit rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-1; }
+  .scale-button { @apply rounded-lg px-3 py-2 text-xs font-bold text-[var(--text-muted)] transition hover:text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .scale-button-selected { @apply bg-[var(--surface)] text-[var(--primary)] shadow-sm; }
+  .chart-caption { @apply mb-4 text-xs leading-5 text-[var(--text-muted)]; }
+  .spending-chart { @apply relative flex min-h-64 min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 pl-12; }
+  .chart-axis { @apply absolute bottom-12 left-3 top-4 flex flex-col justify-between text-[10px] text-[var(--text-muted)]; }
+  .chart-bars { @apply flex min-w-0 flex-1 items-end gap-1.5 overflow-x-auto pb-8; }
+  .chart-bar-button { @apply flex min-w-8 flex-1 flex-col items-center justify-end self-stretch rounded-lg px-0.5 pt-2 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .chart-bar-track { @apply flex min-h-40 w-full items-end justify-center rounded-t-md border-b border-[var(--border)] bg-[linear-gradient(to_top,transparent_49%,var(--border)_50%,transparent_51%)]; }
+  .chart-bar { @apply block w-3/4 min-w-2 rounded-t-md bg-[var(--primary)] transition-all; }
+  .chart-bar-button:hover .chart-bar, .chart-bar-button:focus-visible .chart-bar { @apply bg-[var(--primary-strong)]; }
+  .chart-bar-selected .chart-bar { @apply bg-[var(--accent)]; }
+  .chart-label { @apply mt-2 max-w-16 truncate text-[10px] text-[var(--text-muted)]; }
+  .chart-bar-button:hover .chart-label, .chart-bar-button:focus-visible .chart-label { @apply text-[var(--text)]; }
+  .chart-empty { @apply flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center text-sm text-[var(--text-muted)]; }
+  .pagination-row { @apply mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4 text-xs text-[var(--text-muted)]; }
+  .pagination-controls { @apply flex gap-2; }
+  .pagination-controls .secondary-button { @apply px-2.5 py-1.5; }
+  .period-detail { @apply mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4; }
+  .period-detail-title { @apply mt-1 font-display text-lg font-bold text-[var(--text)]; }
+  .period-detail-total { @apply mt-3 font-display text-3xl font-bold tracking-tight text-[var(--primary)]; }
+  .period-detail-meta { @apply mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]; }
+  .weekly-caps { @apply mt-6 border-t border-[var(--border)] pt-5; }
+  .weekly-caps summary { @apply cursor-pointer text-xs font-bold text-[var(--primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
+}
