@@ -9,5 +9,9 @@ class InvalidMoneyError(TritonSpendError):
     """A balance or price is not a non-negative integer number of cents."""
 
 
+class InvalidExpenseError(TritonSpendError):
+    """An expense amount or payment eligibility declaration is invalid."""
+
+
 class InvalidDateRangeError(TritonSpendError):
     """A date range or reference date is invalid."""
