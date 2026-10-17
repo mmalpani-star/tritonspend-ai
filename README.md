@@ -16,9 +16,19 @@ inclusive timeline rules. Wallet accounting is implemented independently:
 expenses must explicitly list eligible accounts, and when both accounts are
 eligible the allocator charges Dining Dollars first, then Triton Cash. It never
 charges an ineligible account, never makes balances negative, and reports
-unfunded cents. Habit estimates, scenarios, limits, and forecast orchestration
-will be added incrementally. There is no API, database, menu ingestion,
-frontend, NumPy, pandas, or forecasting dependency.
+unfunded cents. Deterministic habit estimates and forecasts use exact
+`Fraction` frequencies and integer-cent charges. Each habit's exact expected
+cost is multiplied by the scenario multiplier, then converted to stored cents
+using the existing nearest-cent, half-up policy before being allocated as a
+separate expense. Placeholder scenarios are frugal (`4/5`), expected (`1`),
+and higher (`6/5`); these are configurable illustrative multipliers, not
+calibrated probabilities. Daily and weekly limits are wallet runway caps, not
+habit-aware spending recommendations: each wallet's starting balance is
+divided independently across projected days, and Monday-Sunday weekly caps
+prorate partial projected weeks by projected day count. These caps do not
+account for payment eligibility and do not guarantee that a wallet can pay for
+particular meals. There is no API, database, menu ingestion, frontend, NumPy,
+pandas, or machine-learning dependency.
 
 Run the tests with:
 

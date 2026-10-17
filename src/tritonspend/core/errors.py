@@ -13,5 +13,13 @@ class InvalidExpenseError(TritonSpendError):
     """An expense amount or payment eligibility declaration is invalid."""
 
 
+class InvalidHabitError(TritonSpendError):
+    """A structured spending habit is invalid."""
+
+
+class InvalidForecastError(TritonSpendError):
+    """Forecast configuration or input is invalid."""
+
+
 class InvalidDateRangeError(TritonSpendError):
     """A date range or reference date is invalid."""
