@@ -1,0 +1,1 @@
+"""TritonSpend domain package."""
