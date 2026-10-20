@@ -1,0 +1,21 @@
+# Local Python environment and generated metadata
+.venv/
+*.egg-info/
+
+# Local secrets
+.env
+.env.*
+
+# Keep an explicitly shared example configuration
+!.env.example
+
+# Local database
+*.db
+
+# Python generated files
+__pycache__/
+.pytest_cache/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/.next/

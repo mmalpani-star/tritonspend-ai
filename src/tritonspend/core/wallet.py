@@ -45,28 +45,28 @@ def allocate_expense(
 ) -> AllocationResult:
     """Charge an expense without cross-wallet substitution.
 
-    When both accounts are explicitly eligible, Dining Dollars are charged
-    first, followed by Triton Cash. Each account is charged only up to its
-    available balance; any remainder is reported as unfunded.
+    When both accounts are explicitly eligible, the expense is split equally,
+    with any odd cent assigned to Triton Cash. Each account is charged only up
+    to its available balance; any remainder is reported as unfunded.
     """
     validate_wallet_balances(balances)
     _validate_expense(expense)
 
-    remaining = expense.amount.cents
-    dining_paid = min(
-        remaining,
-        balances.dining_dollars.cents
-        if PaymentAccount.DINING_DOLLARS in expense.eligible_accounts
-        else 0,
-    )
-    remaining -= dining_paid
-    cash_paid = min(
-        remaining,
-        balances.triton_cash.cents
-        if PaymentAccount.TRITON_CASH in expense.eligible_accounts
-        else 0,
-    )
-    remaining -= cash_paid
+    dining_eligible = PaymentAccount.DINING_DOLLARS in expense.eligible_accounts
+    cash_eligible = PaymentAccount.TRITON_CASH in expense.eligible_accounts
+    if dining_eligible and cash_eligible:
+        dining_target = expense.amount.cents // 2
+        cash_target = expense.amount.cents - dining_target
+    elif dining_eligible:
+        dining_target = expense.amount.cents
+        cash_target = 0
+    else:
+        dining_target = 0
+        cash_target = expense.amount.cents
+
+    dining_paid = min(dining_target, balances.dining_dollars.cents)
+    cash_paid = min(cash_target, balances.triton_cash.cents)
+    remaining = expense.amount.cents - dining_paid - cash_paid
 
     return AllocationResult(
         remaining_balances=WalletBalances(

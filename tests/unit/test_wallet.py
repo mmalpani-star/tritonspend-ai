@@ -32,7 +32,7 @@ def test_triton_cash_only_expense_uses_triton_cash():
     assert result.remaining_balances == balances(500, 400)
 
 
-def test_multiple_eligible_accounts_prefer_dining_dollars():
+def test_multiple_eligible_accounts_split_expense_equally():
     result = allocate_expense(
         balances(200, 500),
         Expense(
@@ -41,9 +41,23 @@ def test_multiple_eligible_accounts_prefer_dining_dollars():
         ),
     )
 
-    assert result.paid_dining_dollars == Money(200)
-    assert result.paid_triton_cash == Money(100)
-    assert result.remaining_balances == balances(0, 400)
+    assert result.paid_dining_dollars == Money(150)
+    assert result.paid_triton_cash == Money(150)
+    assert result.remaining_balances == balances(50, 350)
+
+
+def test_multiple_eligible_accounts_assign_odd_cent_to_triton_cash():
+    result = allocate_expense(
+        balances(500, 500),
+        Expense(
+            Money(101),
+            (PaymentAccount.DINING_DOLLARS, PaymentAccount.TRITON_CASH),
+        ),
+    )
+
+    assert result.paid_dining_dollars == Money(50)
+    assert result.paid_triton_cash == Money(51)
+    assert result.total_paid == Money(101)
 
 
 def test_insufficient_eligible_funds_report_unfunded_without_negative_balances():
@@ -58,6 +72,21 @@ def test_insufficient_eligible_funds_report_unfunded_without_negative_balances()
     assert result.total_paid == Money(300)
     assert result.unfunded == Money(200)
     assert result.remaining_balances == balances(0, 0)
+
+
+def test_split_expense_reports_shortfall_without_reallocating_between_wallets():
+    result = allocate_expense(
+        balances(100, 500),
+        Expense(
+            Money(300),
+            (PaymentAccount.DINING_DOLLARS, PaymentAccount.TRITON_CASH),
+        ),
+    )
+
+    assert result.paid_dining_dollars == Money(100)
+    assert result.paid_triton_cash == Money(150)
+    assert result.unfunded == Money(50)
+    assert result.remaining_balances == balances(0, 350)
 
 
 def test_exact_balance_spending_has_no_unfunded_amount():
@@ -112,7 +141,7 @@ def test_independent_balances_do_not_fund_ineligible_account():
 
 @pytest.mark.parametrize(
     "amount,dining_paid,cash_paid,unfunded",
-    [(0, 0, 0, 0), (150, 100, 50, 0), (500, 100, 200, 200)],
+    [(0, 0, 0, 0), (150, 75, 75, 0), (500, 100, 200, 200)],
 )
 def test_total_spending_equals_funded_plus_unfunded(
     amount, dining_paid, cash_paid, unfunded

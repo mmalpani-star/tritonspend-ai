@@ -7,7 +7,12 @@ import { DailyForecast, ForecastResponse } from "../lib/types";
 type Scale = "daily" | "weekly" | "monthly";
 type Period = { key: string; label: string; start: string; end: string; cents: number; days: DailyForecast[] };
 
-const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const money = (cents: number) => new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+}).format(cents / 100);
 const dateValue = (date: string) => new Date(`${date}T12:00:00`);
 const dateKey = (date: Date) => date.toISOString().slice(0, 10);
 const shortDate = (date: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(dateValue(date));
