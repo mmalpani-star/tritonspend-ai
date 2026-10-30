@@ -1,23 +1,31 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { THEME_STORAGE_KEY, Theme, isTheme } from "../lib/theme";
 
-export type Theme = "classic" | "midnight" | "formal" | "coastal";
+export type { Theme } from "../lib/theme";
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void } | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("classic");
+  // Server render and first client render agree on "classic"; the real theme is
+  // already on <html> (from themeInitScript) and is adopted right after hydration.
+  const [theme, setThemeState] = useState<Theme>("classic");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("tritonspend-theme") as Theme | null;
-    if (saved && ["classic", "midnight", "formal", "coastal"].includes(saved)) setTheme(saved);
+    const applied = document.documentElement.dataset.theme;
+    if (isTheme(applied)) setThemeState(applied);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme === "classic" ? "classic" : theme;
-    window.localStorage.setItem("tritonspend-theme", theme);
-  }, [theme]);
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next);
+    document.documentElement.dataset.theme = next;
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Storage can be unavailable (private mode); the theme still applies for this visit.
+    }
+  }, []);
 
   return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }

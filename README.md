@@ -14,9 +14,11 @@ reads the system clock. A range beginning before `today` is projected from
 The foundation contains money, foundational models and validation, and
 inclusive timeline rules. Wallet accounting is implemented independently:
 expenses must explicitly list eligible accounts, and when both accounts are
-eligible the allocator charges Dining Dollars first, then Triton Cash. It never
-charges an ineligible account, never makes balances negative, and reports
-unfunded cents. Deterministic habit estimates and forecasts use exact
+eligible the allocator splits the expense equally (any odd cent goes to Triton
+Cash). If one account cannot cover its share, the uncovered part is charged to
+the other eligible account, up to that account's available balance. It never
+charges an ineligible account, never makes balances negative, and reports as
+unfunded only the cents that no eligible account can cover. Deterministic habit estimates and forecasts use exact
 `Fraction` frequencies and integer-cent charges. Each habit's exact expected
 cost is multiplied by the scenario multiplier, then converted to stored cents
 using the existing nearest-cent, half-up policy before being allocated as a

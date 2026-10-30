@@ -207,6 +207,26 @@ class ConsentEvent(Base):
     )
 
 
+class UserAccount(Base):
+    """Email and password login for a participant. Only an Argon2id hash is stored."""
+
+    __tablename__ = "user_accounts"
+    __table_args__ = (
+        UniqueConstraint("email", name="uq_user_accounts_email"),
+        UniqueConstraint("participant_id", name="uq_user_accounts_participant_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    participant_id: Mapped[str] = mapped_column(ForeignKey("participants.id"), nullable=False)
+    # Stored normalized (trimmed, lowercase) so uniqueness is case-insensitive.
+    email: Mapped[str] = mapped_column(String(254), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
 class ParticipantSession(Base):
     __tablename__ = "participant_sessions"
     __table_args__ = (

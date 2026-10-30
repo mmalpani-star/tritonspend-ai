@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, CircleAlert, WalletCards } from "lucide-react";
+import { formatCalendarDate, mondayOf } from "../lib/datetime";
 import { DailyForecast, ForecastResponse } from "../lib/types";
+import { AnimatedMoney } from "./visual/animated-money";
 
 type Scale = "daily" | "weekly" | "monthly";
 type Period = { key: string; label: string; start: string; end: string; cents: number; days: DailyForecast[] };
@@ -13,23 +15,14 @@ const money = (cents: number) => new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 }).format(cents / 100);
-const dateValue = (date: string) => new Date(`${date}T12:00:00`);
-const dateKey = (date: Date) => date.toISOString().slice(0, 10);
-const shortDate = (date: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(dateValue(date));
-const monthLabel = (date: string) => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(dateValue(date));
-const longDate = (date: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(dateValue(date));
-
-function mondayFor(date: string) {
-  const value = dateValue(date);
-  const day = value.getDay();
-  value.setDate(value.getDate() - (day === 0 ? 6 : day - 1));
-  return dateKey(value);
-}
+const shortDate = (date: string) => formatCalendarDate(date, { month: "short", day: "numeric" });
+const monthLabel = (date: string) => formatCalendarDate(date, { month: "long", year: "numeric" });
+const longDate = (date: string) => formatCalendarDate(date);
 
 function makePeriods(days: DailyForecast[], scale: Scale): Period[] {
   const groups = new Map<string, DailyForecast[]>();
   days.forEach((day) => {
-    const key = scale === "daily" ? day.date : scale === "weekly" ? mondayFor(day.date) : day.date.slice(0, 7);
+    const key = scale === "daily" ? day.date : scale === "weekly" ? mondayOf(day.date) : day.date.slice(0, 7);
     groups.set(key, [...(groups.get(key) ?? []), day]);
   });
   return [...groups.entries()].map(([key, groupedDays]) => {
@@ -69,7 +62,7 @@ function SpendingChart({ periods, selectedKey, onSelect }: { periods: Period[]; 
     <div className="spending-chart" role="img" aria-label="Spending by selected time period">
       <div className="chart-axis" aria-hidden="true"><span>{money(maxSpend)}</span><span>{money(Math.round(maxSpend / 2))}</span><span>$0.00</span></div>
       <div className="chart-bars">
-        {periods.map((period) => (
+        {periods.map((period, index) => (
           <button
             type="button"
             key={period.key}
@@ -79,7 +72,7 @@ function SpendingChart({ periods, selectedKey, onSelect }: { periods: Period[]; 
             aria-pressed={period.key === selectedKey}
             title={`${period.label}: ${money(period.cents)}`}
           >
-            <span className="chart-bar-track"><span className="chart-bar" style={{ height: `${Math.max((period.cents / maxSpend) * 100, period.cents > 0 ? 4 : 0)}%` }} /></span>
+            <span className="chart-bar-track"><span className="chart-bar" style={{ height: `${Math.max((period.cents / maxSpend) * 100, period.cents > 0 ? 4 : 0)}%`, "--i": index } as React.CSSProperties} /></span>
             <span className="chart-label">{period.label}</span>
           </button>
         ))}
@@ -125,9 +118,9 @@ export function ForecastDashboard({ result }: { result: ForecastResponse }) {
         <div className={`status-pill ${result.funds_last ? "status-good" : "status-danger"}`}>{result.funds_last ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}{result.funds_last ? "Funds projected to last" : "Unfunded spending projected"}</div>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="metric-card"><span className="metric-label">Projected spending</span><strong>{money(totalProjected)}</strong><span className="metric-note">{result.days.length} projected days</span></div>
-        <div className="metric-card"><span className="metric-label">Dining Dollars left</span><strong>{money(result.projected_balances.dining_dollars_cents)}</strong><span className="metric-note">Independent wallet</span></div>
-        <div className="metric-card"><span className="metric-label">Triton Cash left</span><strong>{money(result.projected_balances.triton_cash_cents)}</strong><span className="metric-note">Independent wallet</span></div>
+        <div className="metric-card"><span className="metric-label">Projected spending</span><strong><AnimatedMoney cents={totalProjected} /></strong><span className="metric-note">{result.days.length} projected days</span></div>
+        <div className="metric-card"><span className="metric-label">Dining Dollars left</span><strong><AnimatedMoney cents={result.projected_balances.dining_dollars_cents} /></strong><span className="metric-note">Independent wallet</span></div>
+        <div className="metric-card"><span className="metric-label">Triton Cash left</span><strong><AnimatedMoney cents={result.projected_balances.triton_cash_cents} /></strong><span className="metric-note">Independent wallet</span></div>
       </div>
       {result.total_unfunded_cents > 0 && <div className="notice-danger"><ArrowDownRight size={18} /><span><strong>{money(result.total_unfunded_cents)}</strong> of projected expenses are unfunded. Accounts are never substituted silently.</span></div>}
       <div className="dashboard-grid">

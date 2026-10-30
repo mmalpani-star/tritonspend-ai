@@ -148,23 +148,29 @@ def test_insufficient_funds_and_wallet_continuity_are_reported():
         previous = current
 
 
-def test_cors_allows_local_frontend_and_rejects_unapproved_origin():
+def test_cors_allows_configured_origin_to_preflight_authenticated_account_deletion():
     allowed = client.options(
-        "/api/v1/forecasts",
+        "/api/v1/pilot/account",
         headers={
             "Origin": "http://localhost:3000",
-            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Method": "DELETE",
+            "Access-Control-Request-Headers": "Content-Type, X-CSRF-Token",
         },
     )
     rejected = client.options(
-        "/api/v1/forecasts",
+        "/api/v1/pilot/account",
         headers={
             "Origin": "https://example.com",
-            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Method": "DELETE",
         },
     )
 
     assert allowed.headers["access-control-allow-origin"] == "http://localhost:3000"
+    assert allowed.headers["access-control-allow-credentials"] == "true"
+    assert "DELETE" in allowed.headers["access-control-allow-methods"]
+    allowed_headers = allowed.headers["access-control-allow-headers"].lower()
+    assert "content-type" in allowed_headers
+    assert "x-csrf-token" in allowed_headers
     assert "access-control-allow-origin" not in rejected.headers
 
 

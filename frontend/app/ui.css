@@ -73,5 +73,165 @@
   .period-detail-total { @apply mt-3 font-display text-3xl font-bold tracking-tight text-[var(--primary)]; }
   .period-detail-meta { @apply mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]; }
   .weekly-caps { @apply mt-6 border-t border-[var(--border)] pt-5; }
+  .info-label { @apply relative flex items-center gap-1; }
+  .info-button { @apply -my-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition hover:text-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
+  .info-button[aria-expanded="true"] { @apply bg-[var(--surface-muted)] text-[var(--primary)]; }
+  .info-popover { @apply absolute left-0 right-0 top-full z-30 mt-2 block max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs font-normal leading-5 text-[var(--text)] shadow-xl; }
+  /* The class sets display, so the hidden attribute needs an explicit rule. */
+  .info-popover[hidden] { display: none; }
+  .notice-info { @apply flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--text)]; border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); background: color-mix(in srgb, var(--primary) 8%, transparent); }
+  .notice-info svg { @apply mt-0.5 shrink-0 text-[var(--primary)]; }
+  .wallet-callout { @apply flex flex-wrap items-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:flex-nowrap; }
+  .metric-card .wallet-amount { @apply mt-2 text-4xl tabular-nums; }
+  .wallet-alert { @apply mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--danger)]; }
+  .danger-button { @apply text-[var(--danger)] hover:border-[var(--danger)]; }
+  .danger-fill { background: var(--danger); box-shadow: 0 10px 25px color-mix(in srgb, var(--danger) 20%, transparent); }
+  .danger-fill:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
+  .confirm-dialog { @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--text)] shadow-2xl; }
+  .confirm-dialog::backdrop { background: rgb(8 14 26 / 0.55); backdrop-filter: blur(3px); }
+  .confirm-dialog-body { @apply p-6; }
+  .confidence-chip { @apply rounded-full px-2.5 py-1 font-bold; background: var(--surface-muted); color: var(--text-muted); }
+  .confidence-preliminary, .confidence-starting { color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+  .confidence-developing { color: var(--primary); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .confidence-established { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+  .history-delete { @apply flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
   .weekly-caps summary { @apply cursor-pointer text-xs font-bold text-[var(--primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
+  .history-item { @apply block w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left text-xs text-[var(--text-muted)] transition hover:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]; }
+  .history-item-selected { @apply border-[var(--primary)] bg-[var(--surface-muted)]; }
+  .trajectory-card { @apply min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4; }
+  .chart-legend { @apply mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--text-muted)]; }
+  .chart-legend li { @apply inline-flex items-center gap-1.5; }
+  .chart-tooltip { @apply pointer-events-none absolute top-2 z-10 min-w-44 space-y-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--text-muted)] shadow-lg; }
+  .chart-tooltip strong { @apply tabular-nums text-[var(--text)]; }
+  .dashboard-nav { @apply mb-6 flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 sm:flex-row sm:items-center; }
+  .nav-tab { @apply inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
+  .nav-tab-active { @apply bg-[var(--surface-muted)] text-[var(--primary)]; }
+  .feature-card { @apply flex min-h-64 flex-col rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]; }
+  .feature-badge { @apply rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]; }
+  .feature-badge-ready { @apply text-[var(--success)]; background: color-mix(in srgb, var(--success) 10%, transparent); }
+}
+
+/* Theme slider. Position and colours come from html[data-theme], which the
+   pre-paint script sets, so the trident is in the right place before hydration. */
+.theme-slider {
+  --theme-index: 0;
+  --theme-count: 4;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--theme-count), minmax(0, 1fr));
+  height: 2.75rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--slider-track);
+  border: 1px solid color-mix(in srgb, var(--slider-accent) 55%, var(--slider-track));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 18px -10px color-mix(in srgb, var(--slider-track) 80%, transparent);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background-color 450ms ease, border-color 450ms ease, box-shadow 450ms ease;
+}
+:root[data-theme="midnight"] .theme-slider { --theme-index: 1; }
+:root[data-theme="formal"] .theme-slider { --theme-index: 2; }
+:root[data-theme="coastal"] .theme-slider { --theme-index: 3; }
+
+.theme-slider-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc((100% - 0.5rem) / var(--theme-count));
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--slider-accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--slider-accent) 70%, transparent);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--slider-accent) 45%, transparent);
+  transform: translateX(calc(var(--theme-index) * 100%));
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1), background-color 450ms ease, border-color 450ms ease, box-shadow 450ms ease;
+  pointer-events: none;
+}
+.theme-slider-trident {
+  position: absolute;
+  top: 50%;
+  left: 0.3rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  translate: 0 -50%;
+  /* Navy outline from the reference logo keeps the gold mark crisp on every track. */
+  filter: drop-shadow(0 0 0.6px #182b49) drop-shadow(0 0 0.6px #182b49) drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35));
+}
+.theme-slider-trident-pop { animation: theme-trident-pop 520ms cubic-bezier(0.22, 1, 0.36, 1); }
+.theme-slider-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  animation: theme-glow 900ms ease-out forwards;
+}
+.theme-slider-shimmer {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--slider-accent) 30%, transparent) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: theme-shimmer 900ms ease-out forwards;
+  pointer-events: none;
+}
+
+.theme-slider-option {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 0.5rem 0 2.25rem;
+  color: var(--slider-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background-color 200ms ease, font-weight 200ms ease;
+}
+.theme-slider-option > span { overflow: hidden; text-overflow: ellipsis; }
+/* Empty socket where the trident docks on unselected positions. */
+.theme-slider-option::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  translate: 0 -50%;
+  background: color-mix(in srgb, var(--slider-text) 35%, transparent);
+  transition: opacity 200ms ease;
+}
+.theme-slider-option[aria-checked="true"] { font-weight: 800; }
+.theme-slider-option[aria-checked="true"]::before { opacity: 0; }
+.theme-slider-option:hover { background: color-mix(in srgb, var(--slider-text) 9%, transparent); }
+.theme-slider-option[aria-checked="true"]:hover { background: transparent; }
+.theme-slider-option:focus { outline: none; }
+.theme-slider-option:focus-visible { outline: 2px solid var(--slider-text); outline-offset: -3px; }
+
+@keyframes theme-trident-pop {
+  0% { scale: 1; rotate: 0deg; }
+  45% { scale: 1.14; rotate: -8deg; }
+  100% { scale: 1; rotate: 0deg; }
+}
+@keyframes theme-glow {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--slider-accent) 70%, transparent); }
+  100% { box-shadow: 0 0 22px 6px transparent; }
+}
+@keyframes theme-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-slider,
+  .theme-slider-indicator,
+  .theme-slider-option,
+  .theme-slider-option::before { transition: none; }
+  .theme-slider-trident-pop,
+  .theme-slider-glow,
+  .theme-slider-shimmer { animation: none; }
+  .theme-slider-shimmer { display: none; }
 }

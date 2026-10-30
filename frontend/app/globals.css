@@ -21,9 +21,21 @@
   --accent: #ffcd00;
   --success: #18794e;
   --danger: #b42318;
+  /* Trajectory chart series, validated against the #ffffff light surfaces. */
+  --chart-projected: #2a78d6;
+  --chart-actual: #eb6834;
+  /* Theme slider: UCSD blue track with gold accents. */
+  --slider-track: #00629b;
+  --slider-accent: #ffcd00;
+  --slider-text: #ffffff;
 }
 
 [data-theme="midnight"] {
+  --slider-track: #1a304b;
+  --slider-accent: #3ca7df;
+  --slider-text: #f4f7fb;
+  --chart-projected: #3987e5;
+  --chart-actual: #d95926;
   --page: #0d182a;
   --surface: #14243b;
   --surface-muted: #1a304b;
@@ -38,6 +50,9 @@
 }
 
 [data-theme="formal"] {
+  --slider-track: #182b49;
+  --slider-accent: #c69214;
+  --slider-text: #f5f0e6;
   --page: #f5f0e6;
   --surface: #ffffff;
   --surface-muted: #eee8dc;
@@ -52,6 +67,10 @@
 }
 
 [data-theme="coastal"] {
+  /* Deep teal: white labels and the gold trident fail contrast on raw turquoise. */
+  --slider-track: #00707d;
+  --slider-accent: #00c6d7;
+  --slider-text: #ffffff;
   --page: #f2fbfc;
   --surface: #ffffff;
   --surface-muted: #e4f5f7;

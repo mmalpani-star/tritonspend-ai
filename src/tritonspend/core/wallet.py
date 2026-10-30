@@ -43,11 +43,14 @@ def allocate_expense(
     balances: WalletBalances,
     expense: Expense,
 ) -> AllocationResult:
-    """Charge an expense without cross-wallet substitution.
+    """Charge an expense to its eligible accounts only.
 
     When both accounts are explicitly eligible, the expense is split equally,
-    with any odd cent assigned to Triton Cash. Each account is charged only up
-    to its available balance; any remainder is reported as unfunded.
+    with any odd cent assigned to Triton Cash. If one account cannot cover its
+    share, the uncovered part is charged to the other eligible account, up to
+    that account's available balance. An ineligible account is never charged,
+    no account goes negative, and only the amount no eligible account can
+    cover is reported as unfunded.
     """
     validate_wallet_balances(balances)
     _validate_expense(expense)
@@ -66,6 +69,12 @@ def allocate_expense(
 
     dining_paid = min(dining_target, balances.dining_dollars.cents)
     cash_paid = min(cash_target, balances.triton_cash.cents)
+    if dining_eligible and cash_eligible:
+        # Spill each account's uncovered share onto the other's remaining balance.
+        dining_shortfall = dining_target - dining_paid
+        cash_shortfall = cash_target - cash_paid
+        dining_paid += min(cash_shortfall, balances.dining_dollars.cents - dining_paid)
+        cash_paid += min(dining_shortfall, balances.triton_cash.cents - cash_paid)
     remaining = expense.amount.cents - dining_paid - cash_paid
 
     return AllocationResult(

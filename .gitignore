@@ -9,8 +9,11 @@
 # Keep an explicitly shared example configuration
 !.env.example
 
-# Local database
+# Local databases (may hold participant data)
 *.db
+*.sqlite
+*.sqlite3
+*.db-journal
 
 # Python generated files
 __pycache__/
@@ -19,3 +22,7 @@ __pycache__/
 # Frontend dependencies and build output
 frontend/node_modules/
 frontend/.next/
+
+# OS and log noise
+.DS_Store
+*.log

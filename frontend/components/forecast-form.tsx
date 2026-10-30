@@ -1,14 +1,24 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { Account, ForecastRequest, HabitInput, Scenario } from "../lib/types";
+import { useId, useState } from "react";
+import { Account, ForecastRequest, HabitInput, ParticipantForecastRequest, Scenario } from "../lib/types";
+import { campusToday } from "../lib/datetime";
+import { InfoLabel } from "./info-label";
 
-type Props = { loading: boolean; onSubmit: (request: ForecastRequest) => Promise<void> };
+// With onSubmitSaved, the start date and balances come from the participant's
+// saved wallet balances on the server, so only the end date, scenario, and habits are asked for.
+type Props = { loading: boolean } & (
+  | { onSubmit: (request: ForecastRequest) => Promise<void>; onSubmitSaved?: never }
+  | { onSubmitSaved: (request: ParticipantForecastRequest) => Promise<void>; onSubmit?: never }
+);
 const accountLabels: Record<Account, string> = {
   dining_dollars: "Dining Dollars",
   triton_cash: "Triton Cash"
 };
+
+const END_DATE_HELP = "Choose the last day you want this forecast to cover. The application calculates how your Dining Dollars and Triton Cash are expected to last through this date.";
+const START_DATE_HELP = "Choose the first day this estimate should cover. Enter the balances you expect to have at the start of that day.";
 
 const emptyHabit = (): HabitInput => ({
   name: "",
@@ -25,7 +35,8 @@ export function dollarsToCents(value: string): number | null {
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
-export function ForecastForm({ loading, onSubmit }: Props) {
+export function ForecastForm({ loading, onSubmit, onSubmitSaved }: Props) {
+  const id = useId();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [dining, setDining] = useState("");
@@ -50,19 +61,37 @@ export function ForecastForm({ loading, onSubmit }: Props) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    const habitCents = habitPrices.map(dollarsToCents);
+    const invalidHabits = habits.some((habit, index) => !habit.name.trim() || !/^\d+(?:\/\d+)?$/.test(habit.frequency) || habitCents[index] === null || habit.eligible_accounts.length === 0);
+    const habitError = "Each habit needs a name, a price with up to two decimal places, a fraction-style frequency, and at least one eligible account.";
+    if (onSubmitSaved) {
+      if (!endDate) {
+        setError("Choose an end date of today or later.");
+        return;
+      }
+      if (habits.length === 0 || invalidHabits) {
+        setError(habits.length === 0 ? "Add at least one habit to forecast spending." : habitError);
+        return;
+      }
+      try {
+        await onSubmitSaved({ end_date: endDate, scenario, habits: habits.map((habit, index) => ({ ...habit, price_cents: habitCents[index]! })) });
+      } catch (submissionError) {
+        setError(submissionError instanceof Error ? submissionError.message : "Unable to create forecast.");
+      }
+      return;
+    }
     const diningCents = dollarsToCents(dining);
     const cashCents = dollarsToCents(cash);
     if (!startDate || !endDate || diningCents === null || cashCents === null) {
       setError("Add both dates and enter balances as dollars with up to two decimal places.");
       return;
     }
-    const habitCents = habitPrices.map(dollarsToCents);
-    if (habits.some((habit, index) => !habit.name.trim() || !/^\d+(?:\/\d+)?$/.test(habit.frequency) || habitCents[index] === null || habit.eligible_accounts.length === 0)) {
-      setError("Each habit needs a name, a price with up to two decimal places, a fraction-style frequency, and at least one eligible account.");
+    if (invalidHabits) {
+      setError(habitError);
       return;
     }
     try {
-      await onSubmit({
+      await onSubmit?.({
         start_date: startDate,
         end_date: endDate,
         dining_dollars_cents: diningCents,
@@ -77,12 +106,26 @@ export function ForecastForm({ loading, onSubmit }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-7">
+      {onSubmitSaved ? (
+        <div className="field-label">
+          <InfoLabel htmlFor={`${id}-end`} label="End date">{END_DATE_HELP}</InfoLabel>
+          <input id={`${id}-end`} required type="date" min={campusToday()} value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+          <span className="field-help mt-1.5">Starting balances come from your latest saved wallet balances.</span>
+        </div>
+      ) : (
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="field-label">Start date<input required type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
-        <label className="field-label">End date<input required type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+        <div className="field-label">
+          <InfoLabel htmlFor={`${id}-start`} label="Start date">{START_DATE_HELP}</InfoLabel>
+          <input id={`${id}-start`} required type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+        </div>
+        <div className="field-label">
+          <InfoLabel htmlFor={`${id}-end`} label="End date">{END_DATE_HELP}</InfoLabel>
+          <input id={`${id}-end`} required type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+        </div>
         <label className="field-label">Dining Dollars balance<input required inputMode="decimal" placeholder="0.00" value={dining} onChange={(event) => setDining(event.target.value)} /><span className="field-help">Enter your balance in US dollars (up to 2 decimal places); converted to cents internally.</span></label>
         <label className="field-label">Triton Cash balance<input required inputMode="decimal" placeholder="0.00" value={cash} onChange={(event) => setCash(event.target.value)} /><span className="field-help">Entered in US dollars; tracked separately from Dining Dollars and converted to cents internally.</span></label>
       </div>
+      )}
       <div>
         <label className="field-label">Spending scenario<select value={scenario} onChange={(event) => setScenario(event.target.value as Scenario)}><option value="expected">Expected</option><option value="frugal">Frugal</option><option value="higher">Higher spending</option></select></label>
         <p className="field-help mt-2">Illustrative multipliers, not probability ranges.</p>
@@ -112,7 +155,7 @@ export function ForecastForm({ loading, onSubmit }: Props) {
         ))}
       </div>
       {error && <p role="alert" className="error-box">{error}</p>}
-      <button disabled={loading} type="submit" className="primary-button w-full sm:w-auto">{loading ? "Building your forecast…" : "Create forecast"}</button>
+      <button disabled={loading} type="submit" className="primary-button w-full sm:w-auto">{loading ? "Building your forecast…" : onSubmitSaved ? "Create and save forecast" : "Create forecast"}</button>
     </form>
   );
 }

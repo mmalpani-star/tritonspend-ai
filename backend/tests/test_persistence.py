@@ -165,6 +165,9 @@ def test_metadata_initializes_all_m1_tables_with_columns_constraints_and_indexes
             "id", "participant_id", "session_token_hash", "csrf_token_hash",
             "created_at", "last_seen_at", "expires_at", "revoked_at",
         },
+        "user_accounts": {
+            "id", "participant_id", "email", "password_hash", "created_at", "last_login_at",
+        },
     }
     assert set(database.get_table_names()) == set(expected_columns)
     for table_name, columns in expected_columns.items():
@@ -181,6 +184,7 @@ def test_metadata_initializes_all_m1_tables_with_columns_constraints_and_indexes
         "forecast_snapshots": [("participant_id", "participants", "id")],
         "consent_events": [("participant_id", "participants", "id")],
         "participant_sessions": [("participant_id", "participants", "id")],
+        "user_accounts": [("participant_id", "participants", "id")],
     }
     for table_name, foreign_keys in expected_foreign_keys.items():
         assert [
@@ -198,6 +202,9 @@ def test_metadata_initializes_all_m1_tables_with_columns_constraints_and_indexes
         constraint["name"]
         for constraint in database.get_unique_constraints("participant_balance_thresholds")
     } == {"uq_threshold_participant"}
+    assert {
+        constraint["name"] for constraint in database.get_unique_constraints("user_accounts")
+    } == {"uq_user_accounts_email", "uq_user_accounts_participant_id"}
     assert {
         check["name"] for check in database.get_check_constraints("participant_balance_thresholds")
     } == {
@@ -219,6 +226,7 @@ def test_alembic_upgrade_and_downgrade_create_and_remove_schema(tmp_path, monkey
         "consent_events",
         "participant_sessions",
         "participant_balance_thresholds",
+        "user_accounts",
     } <= set(database.get_table_names())
     assert "ix_forecast_snapshots_start_date" in {
         index["name"] for index in database.get_indexes("forecast_snapshots")

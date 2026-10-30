@@ -1,15 +1,37 @@
-"""Participant-scoped Stage 3 balance, ledger, and zero-spending routes."""
+"""Participant-scoped wallet, threshold, forecast, and legacy ledger routes."""
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
+from tritonspend.core.errors import TritonSpendError
+from tritonspend.core.forecast import forecast
+
 from .db import get_db
+from .dependencies import pilot_today_provider
+from .mapping import to_core_input, to_response
+from .participant_forecast import (
+    CHARTABLE_SCHEMA_VERSIONS,
+    END_OF_DAY_ENGINE_VERSION,
+    END_OF_DAY_SNAPSHOT_SCHEMA_VERSION,
+    ENGINE_VERSION,
+    MAX_PARTICIPANT_FORECAST_DAYS,
+    SNAPSHOT_SCHEMA_VERSION,
+    STALE_BASELINE_DAYS,
+    WALLET_SOURCE,
+    build_trajectory,
+    forecast_start,
+    wallet_start_warnings,
+)
+from .backtest import evaluate as evaluate_backtest
+from .personal_model import build_prediction, observations_from_checkins
+from .schemas import ForecastRequest
 from .models import (
     BalanceCheckin,
     Consent,
@@ -21,6 +43,7 @@ from .models import (
     Participant,
     ParticipantBalanceThreshold,
     ParticipantSession,
+    UserAccount,
     ZeroSpendingConfirmation,
 )
 from .pilot_schemas import (
@@ -30,14 +53,24 @@ from .pilot_schemas import (
     BalanceWarningResponse,
     BalanceWarningsResponse,
     ConsentHistoryItem,
+    DeleteForecastResponse,
     DeleteParticipantRequest,
     DeleteParticipantResponse,
     ForecastSnapshotExportItem,
+    ForecastTrajectoryResponse,
     LedgerEntryRequest,
     LedgerEntryResponse,
     ParticipantExportResponse,
+    ParticipantForecastDetail,
+    ParticipantForecastHistoryResponse,
+    ParticipantForecastRequest,
+    ParticipantForecastSummary,
     PilotDataResponse,
+    PredictionResponse,
+    as_utc,
     PilotDayResponse,
+    WalletSaveRequest,
+    WalletStatusResponse,
     ZeroSpendingRequest,
     ZeroSpendingResponse,
 )
@@ -143,6 +176,80 @@ def _warnings_response(
     )
 
 
+WALLET_HISTORY_LIMIT = 20
+
+
+@router.get("/wallet", response_model=WalletStatusResponse)
+def read_wallet(
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+    today: date = Depends(pilot_today_provider),
+) -> WalletStatusResponse:
+    """Latest saved wallet balances (the starting point for saved forecasts) and thresholds."""
+    history = session.scalars(
+        select(BalanceCheckin)
+        .where(
+            BalanceCheckin.participant_id == participant.id,
+            BalanceCheckin.effective_date <= today,
+        )
+        .order_by(
+            BalanceCheckin.effective_date.desc(),
+            BalanceCheckin.observed_at.desc(),
+            BalanceCheckin.created_at.desc(),
+        )
+        .limit(WALLET_HISTORY_LIMIT)
+    ).all()
+    latest = history[0] if history else None
+    threshold = session.scalar(
+        select(ParticipantBalanceThreshold).where(
+            ParticipantBalanceThreshold.participant_id == participant.id
+        )
+    )
+    days_since_update = (today - latest.effective_date).days if latest is not None else None
+    return WalletStatusResponse(
+        latest=_checkin_response(latest) if latest is not None else None,
+        history=[_checkin_response(value) for value in history],
+        days_since_update=days_since_update,
+        stale=days_since_update is not None and days_since_update > STALE_BASELINE_DAYS,
+        stale_after_days=STALE_BASELINE_DAYS,
+        thresholds=(
+            BalanceThresholdRequest(
+                dining_dollars_cents=threshold.dining_dollars_cents,
+                triton_cash_cents=threshold.triton_cash_cents,
+            )
+            if threshold is not None
+            else None
+        ),
+        warnings=_warnings_response(threshold, latest) if threshold is not None else None,
+    )
+
+
+@router.post(
+    "/wallet",
+    response_model=BalanceCheckinResponse,
+    dependencies=[Depends(require_csrf), Depends(require_active_consent)],
+)
+def save_wallet_balances(
+    payload: WalletSaveRequest,
+    participant: Participant = Depends(require_active_consent),
+    session: Session = Depends(get_db),
+) -> BalanceCheckinResponse:
+    """Save both balances as accurate on their as-of date; forecasts start on that date."""
+    _reject_future(payload.effective_date, "effective_date")
+    value = BalanceCheckin(
+        participant_id=participant.id,
+        observed_at=_utc_now(),
+        effective_date=payload.effective_date,
+        dining_dollars_cents=payload.dining_dollars_cents,
+        triton_cash_cents=payload.triton_cash_cents,
+        source=WALLET_SOURCE,
+    )
+    session.add(value)
+    session.commit()
+    session.refresh(value)
+    return _checkin_response(value)
+
+
 @router.get("/export", response_model=ParticipantExportResponse)
 def export_participant_data(
     response: Response,
@@ -179,11 +286,13 @@ def export_participant_data(
         .where(ForecastSnapshot.participant_id == participant.id)
         .order_by(ForecastSnapshot.created_at, ForecastSnapshot.id)
     ).all()
+    account = session.scalar(select(UserAccount).where(UserAccount.participant_id == participant.id))
     response.headers["Content-Disposition"] = 'attachment; filename="tritonspend-data-export.json"'
     return ParticipantExportResponse(
         participant={
-            "created_at": participant.created_at,
-            "deleted_at": participant.deleted_at,
+            "email": account.email if account is not None else None,
+            "created_at": as_utc(participant.created_at),
+            "deleted_at": as_utc(participant.deleted_at) if participant.deleted_at else None,
             "timezone": participant.timezone,
         },
         balance_checkins=[_checkin_response(value) for value in checkins],
@@ -257,6 +366,8 @@ def delete_participant_account(
         )
         session.execute(delete(Consent).where(Consent.participant_id == participant.id))
         session.execute(delete(InviteToken).where(InviteToken.participant_id == participant.id))
+        # Removes the email and password hash; the email can be registered again.
+        session.execute(delete(UserAccount).where(UserAccount.participant_id == participant.id))
         participant.deleted_at = deleted_at
     session.execute(
         update(ParticipantSession)
@@ -451,3 +562,320 @@ def read_pilot_data(
         days=days,
         ledger_entries=[_ledger_response(value) for value in ledger],
     )
+
+
+def _owned_snapshot(session: Session, participant_id: str, forecast_id: str) -> ForecastSnapshot:
+    snapshot = session.scalar(
+        select(ForecastSnapshot).where(
+            ForecastSnapshot.id == forecast_id,
+            ForecastSnapshot.participant_id == participant_id,
+        )
+    )
+    if snapshot is None:
+        # Same response for missing and other participants' snapshots.
+        raise HTTPException(status_code=404, detail="forecast not found")
+    return snapshot
+
+
+def _optional_wallet(value: object) -> dict | None:
+    if isinstance(value, dict) and all(
+        isinstance(value.get(key), int) for key in ("dining_dollars_cents", "triton_cash_cents")
+    ):
+        return value
+    return None
+
+
+def _forecast_summary(snapshot: ForecastSnapshot) -> ParticipantForecastSummary:
+    # Tolerates snapshots that predate this workflow (e.g. imported fixtures).
+    inputs = snapshot.request_json if isinstance(snapshot.request_json, dict) else {}
+    output = snapshot.response_json if isinstance(snapshot.response_json, dict) else {}
+    warnings = inputs.get("warnings")
+    return ParticipantForecastSummary(
+        id=snapshot.id,
+        created_at=snapshot.created_at,
+        start_date=snapshot.start_date,
+        end_date=snapshot.end_date,
+        engine_version=snapshot.engine_version,
+        scenario=output.get("scenario") if isinstance(output.get("scenario"), str) else None,
+        funds_last=output.get("funds_last") if isinstance(output.get("funds_last"), bool) else None,
+        total_unfunded_cents=(
+            output.get("total_unfunded_cents")
+            if isinstance(output.get("total_unfunded_cents"), int)
+            else None
+        ),
+        # v2 snapshots store "starting_balances"; legacy v1 stored "reconciled_balances".
+        starting_balances=_optional_wallet(
+            inputs.get("starting_balances", inputs.get("reconciled_balances"))
+        ),
+        projected_balances=_optional_wallet(output.get("projected_balances")),
+        warnings=[item for item in warnings if isinstance(item, str)] if isinstance(warnings, list) else [],
+    )
+
+
+def _forecast_detail(snapshot: ForecastSnapshot) -> ParticipantForecastDetail:
+    return ParticipantForecastDetail(
+        id=snapshot.id,
+        created_at=snapshot.created_at,
+        start_date=snapshot.start_date,
+        end_date=snapshot.end_date,
+        engine_version=snapshot.engine_version,
+        inputs=snapshot.request_json,
+        forecast=snapshot.response_json,
+    )
+
+
+@router.post(
+    "/forecasts",
+    response_model=ParticipantForecastDetail,
+    dependencies=[Depends(require_csrf), Depends(require_active_consent)],
+)
+def create_participant_forecast(
+    payload: ParticipantForecastRequest,
+    participant: Participant = Depends(require_active_consent),
+    session: Session = Depends(get_db),
+    today: date = Depends(pilot_today_provider),
+) -> ParticipantForecastDetail:
+    """Forecast from the latest saved wallet balances and save an immutable snapshot."""
+    if payload.end_date < today:
+        raise HTTPException(status_code=422, detail="end_date cannot be before today")
+    wallet = session.scalar(
+        select(BalanceCheckin)
+        .where(
+            BalanceCheckin.participant_id == participant.id,
+            BalanceCheckin.effective_date <= today,
+        )
+        .order_by(
+            BalanceCheckin.effective_date.desc(),
+            BalanceCheckin.observed_at.desc(),
+            BalanceCheckin.created_at.desc(),
+        )
+        .limit(1)
+    )
+    if wallet is None:
+        raise HTTPException(
+            status_code=422,
+            detail="No wallet balances are saved yet. Save your Dining Dollars and Triton Cash "
+            "balances before creating a forecast.",
+        )
+    as_of = wallet.effective_date
+    # Wallet saves start on their as-of date; older end-of-day check-ins start the next day.
+    start_date = forecast_start(wallet)
+    starts_on_as_of = wallet.source == WALLET_SOURCE
+    if payload.end_date < start_date:
+        raise HTTPException(
+            status_code=422,
+            detail=f"end_date must be on or after {start_date.isoformat()}, the first day of this forecast",
+        )
+    if (payload.end_date - start_date).days + 1 > MAX_PARTICIPANT_FORECAST_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"forecast can cover at most {MAX_PARTICIPANT_FORECAST_DAYS} days from "
+            f"{start_date.isoformat()}, the first day covered by your wallet balances. "
+            "Update your wallet balances or choose an earlier end date.",
+        )
+
+    starting_balances = {
+        "dining_dollars_cents": wallet.dining_dollars_cents,
+        "triton_cash_cents": wallet.triton_cash_cents,
+    }
+    core_request = {
+        "start_date": start_date.isoformat(),
+        "end_date": payload.end_date.isoformat(),
+        **starting_balances,
+        "scenario": payload.scenario,
+        "habits": [habit.model_dump() for habit in payload.habits],
+    }
+    try:
+        # The engine's reference date is the projection start, so days between the
+        # as-of date and today are projected rather than skipped.
+        core_input = to_core_input(ForecastRequest.model_validate(core_request), start_date)
+        result = forecast(
+            core_input.date_range,
+            core_input.balances,
+            core_input.habits,
+            core_input.scenario,
+        )
+    except (TritonSpendError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    threshold = session.scalar(
+        select(ParticipantBalanceThreshold).where(
+            ParticipantBalanceThreshold.participant_id == participant.id
+        )
+    )
+    inputs = {
+        "schema_version": SNAPSHOT_SCHEMA_VERSION if starts_on_as_of else END_OF_DAY_SNAPSHOT_SCHEMA_VERSION,
+        "created_on": today.isoformat(),
+        # The as-of date of the starting balances (start of day for v3, end of day for v2).
+        "reference_date": as_of.isoformat(),
+        "start_date": start_date.isoformat(),
+        "end_date": payload.end_date.isoformat(),
+        "request": payload.model_dump(mode="json"),
+        "balance_source": "latest_saved_wallet_balances",
+        "wallet_balances": {
+            "id": wallet.id,
+            "effective_date": as_of.isoformat(),
+            "observed_at": as_utc(wallet.observed_at).isoformat(),
+            "source": wallet.source,
+            **starting_balances,
+        },
+        "starting_balances": starting_balances,
+        "targets": (
+            {
+                "dining_dollars_cents": threshold.dining_dollars_cents,
+                "triton_cash_cents": threshold.triton_cash_cents,
+            }
+            if threshold is not None
+            else None
+        ),
+        "warnings": list(wallet_start_warnings(as_of, today, start_date)),
+        "core_request": core_request,
+    }
+    snapshot = ForecastSnapshot(
+        participant_id=participant.id,
+        start_date=start_date,
+        end_date=payload.end_date,
+        engine_version=ENGINE_VERSION if starts_on_as_of else END_OF_DAY_ENGINE_VERSION,
+        request_json=inputs,
+        response_json=to_response(result).model_dump(mode="json"),
+    )
+    session.add(snapshot)
+    session.commit()
+    session.refresh(snapshot)
+    return _forecast_detail(snapshot)
+
+
+@router.get("/forecasts", response_model=ParticipantForecastHistoryResponse)
+def list_participant_forecasts(
+    limit: int = Query(20, ge=1, le=100),
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+) -> ParticipantForecastHistoryResponse:
+    snapshots = session.scalars(
+        select(ForecastSnapshot)
+        .where(ForecastSnapshot.participant_id == participant.id)
+        .order_by(ForecastSnapshot.created_at.desc(), ForecastSnapshot.id.desc())
+        .limit(limit)
+    ).all()
+    return ParticipantForecastHistoryResponse(forecasts=[_forecast_summary(value) for value in snapshots])
+
+
+@router.get("/forecasts/{forecast_id}", response_model=ParticipantForecastDetail)
+def read_participant_forecast(
+    forecast_id: str,
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+) -> ParticipantForecastDetail:
+    return _forecast_detail(_owned_snapshot(session, participant.id, forecast_id))
+
+
+@router.delete(
+    "/forecasts/{forecast_id}",
+    response_model=DeleteForecastResponse,
+    dependencies=[Depends(require_csrf), Depends(require_active_consent)],
+)
+def delete_participant_forecast(
+    forecast_id: str,
+    participant: Participant = Depends(require_active_consent),
+    session: Session = Depends(get_db),
+) -> DeleteForecastResponse:
+    """Delete one of the participant's saved forecasts; nothing else is touched."""
+    snapshot = _owned_snapshot(session, participant.id, forecast_id)
+    session.delete(snapshot)
+    session.commit()
+    return DeleteForecastResponse(deleted=True, id=forecast_id)
+
+
+@router.get("/forecasts/{forecast_id}/trajectory", response_model=ForecastTrajectoryResponse)
+def read_participant_forecast_trajectory(
+    forecast_id: str,
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+) -> ForecastTrajectoryResponse:
+    """Saved wallet balances vs. the stored projection vs. an even spend-down to target."""
+    snapshot = _owned_snapshot(session, participant.id, forecast_id)
+    inputs = snapshot.request_json if isinstance(snapshot.request_json, dict) else {}
+    if inputs.get("schema_version") not in CHARTABLE_SCHEMA_VERSIONS:
+        raise HTTPException(
+            status_code=409,
+            detail="this forecast snapshot was not created from saved data and cannot be charted",
+        )
+    start_date = date.fromisoformat(inputs["start_date"])
+    # An end-of-day check-in the day before the forecast describes its first day's start.
+    checkins = session.scalars(
+        select(BalanceCheckin).where(
+            BalanceCheckin.participant_id == participant.id,
+            BalanceCheckin.effective_date.between(start_date - timedelta(days=1), snapshot.end_date),
+        )
+    ).all()
+    return ForecastTrajectoryResponse.model_validate(
+        build_trajectory(snapshot.id, inputs, snapshot.response_json, checkins)
+    )
+
+
+def _comparison(snapshot: ForecastSnapshot) -> Optional[dict]:
+    """The selected saved forecast as a read-only reference: dates, saved targets, and its plan."""
+    inputs = snapshot.request_json if isinstance(snapshot.request_json, dict) else {}
+    output = snapshot.response_json if isinstance(snapshot.response_json, dict) else {}
+    if inputs.get("schema_version") not in CHARTABLE_SCHEMA_VERSIONS:
+        return None
+    starting = _optional_wallet(inputs.get("starting_balances", inputs.get("reconciled_balances")))
+    # The plan's balance at the start of its first day, then at the end of each day.
+    plan = {snapshot.start_date: dict(starting)} if starting else {}
+    for day in output.get("days", []):
+        remaining = _optional_wallet(day.get("remaining_balances"))
+        if remaining is not None:
+            plan[date.fromisoformat(day["date"]) + timedelta(days=1)] = dict(remaining)
+    return {
+        "id": snapshot.id,
+        "created_at": snapshot.created_at,
+        "start_date": snapshot.start_date,
+        "end_date": snapshot.end_date,
+        "scenario": output.get("scenario") if isinstance(output.get("scenario"), str) else None,
+        "targets": _optional_wallet(inputs.get("targets")),
+        "plan": plan,
+    }
+
+
+@router.get("/prediction", response_model=PredictionResponse)
+def read_personal_prediction(
+    forecast_id: Optional[str] = Query(None),
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+    today: date = Depends(pilot_today_provider),
+) -> PredictionResponse:
+    """Personalized prediction computed on request from this participant's saved balances only."""
+    comparison = _comparison(_owned_snapshot(session, participant.id, forecast_id)) if forecast_id else None
+    checkins = session.scalars(
+        select(BalanceCheckin).where(BalanceCheckin.participant_id == participant.id)
+    ).all()
+    threshold = session.scalar(
+        select(ParticipantBalanceThreshold).where(
+            ParticipantBalanceThreshold.participant_id == participant.id
+        )
+    )
+    current_targets = (
+        {"dining_dollars_cents": threshold.dining_dollars_cents, "triton_cash_cents": threshold.triton_cash_cents}
+        if threshold is not None
+        else None
+    )
+    return PredictionResponse.model_validate(
+        build_prediction(observations_from_checkins(checkins, today), today, comparison, current_targets)
+    )
+
+
+@router.get("/prediction/backtest")
+def read_prediction_backtest(
+    include_pairs: bool = Query(False),
+    participant: Participant = Depends(get_current_participant),
+    session: Session = Depends(get_db),
+    today: date = Depends(pilot_today_provider),
+) -> dict:
+    """Developer diagnostic: rolling-origin backtest of the current model on this participant's own balances.
+
+    Read-only and computed on request; nothing is stored. Not used by the student UI.
+    """
+    checkins = session.scalars(
+        select(BalanceCheckin).where(BalanceCheckin.participant_id == participant.id)
+    ).all()
+    return evaluate_backtest(checkins, today, include_pairs=include_pairs)
