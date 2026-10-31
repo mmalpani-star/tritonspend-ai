@@ -23,6 +23,7 @@ from .schemas import (
     HabitRequest,
     LimitsResponse,
     WalletResponse,
+    frequency_error,
 )
 
 
@@ -40,14 +41,13 @@ def parse_frequency(value: str) -> Fraction:
     """Parse the strict fraction syntax accepted by the JSON contract."""
     if not isinstance(value, str):
         raise ValueError("frequency must be a string")
+    error = frequency_error(value)
+    if error:
+        raise ValueError(error)
     parts = value.split("/")
-    if len(parts) == 1 and parts[0].isdigit():
+    if len(parts) == 1:
         return Fraction(int(parts[0]), 1)
-    if len(parts) == 2 and all(part.isdigit() for part in parts):
-        numerator, denominator = (int(part) for part in parts)
-        if denominator > 0:
-            return Fraction(numerator, denominator)
-    raise ValueError("frequency must be a non-negative fraction string")
+    return Fraction(int(parts[0]), int(parts[1]))
 
 
 def _account(value: str) -> PaymentAccount:

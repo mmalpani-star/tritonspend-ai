@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, CircleAlert, WalletCards } from "lucide-react";
 import { formatCalendarDate, mondayOf } from "../lib/datetime";
+import { groupDays, periodTotals } from "../lib/forecast-periods";
 import { DailyForecast, ForecastResponse } from "../lib/types";
 import { AnimatedMoney } from "./visual/animated-money";
 
@@ -20,12 +21,8 @@ const monthLabel = (date: string) => formatCalendarDate(date, { month: "long", y
 const longDate = (date: string) => formatCalendarDate(date);
 
 function makePeriods(days: DailyForecast[], scale: Scale): Period[] {
-  const groups = new Map<string, DailyForecast[]>();
-  days.forEach((day) => {
-    const key = scale === "daily" ? day.date : scale === "weekly" ? mondayOf(day.date) : day.date.slice(0, 7);
-    groups.set(key, [...(groups.get(key) ?? []), day]);
-  });
-  return [...groups.entries()].map(([key, groupedDays]) => {
+  const keyOf = (date: string) => (scale === "daily" ? date : scale === "weekly" ? mondayOf(date) : date.slice(0, 7));
+  return groupDays(days, keyOf).map(({ key, days: groupedDays }) => {
     const start = groupedDays[0].date;
     const end = groupedDays[groupedDays.length - 1].date;
     const label = scale === "daily"
@@ -33,12 +30,13 @@ function makePeriods(days: DailyForecast[], scale: Scale): Period[] {
       : scale === "weekly"
         ? `${shortDate(start)} – ${shortDate(end)}`
         : monthLabel(start);
-    return { key, label, start, end, cents: groupedDays.reduce((total, day) => total + day.expected_spending_cents, 0), days: groupedDays };
+    return { key, label, start, end, cents: periodTotals(groupedDays).spendingCents, days: groupedDays };
   });
 }
 
 function PeriodDetail({ period, scale }: { period: Period; scale: Scale }) {
-  const lastDay = period.days[period.days.length - 1];
+  // Totals across every day in the period, not just its last day.
+  const totals = periodTotals(period.days);
   return (
     <div className="period-detail" aria-live="polite">
       <div>
@@ -47,10 +45,10 @@ function PeriodDetail({ period, scale }: { period: Period; scale: Scale }) {
       </div>
       <div className="period-detail-total">{money(period.cents)}</div>
       <div className="period-detail-meta">
-        <span>{period.days.length} {period.days.length === 1 ? "day" : "days"} in forecast</span>
-        <span>DD {money(lastDay.paid_dining_dollars_cents)}</span>
-        <span>Cash {money(lastDay.paid_triton_cash_cents)}</span>
-        {lastDay.unfunded_cents > 0 && <span className="text-[var(--danger)]">Unfunded {money(lastDay.unfunded_cents)}</span>}
+        <span>{totals.dayCount} {totals.dayCount === 1 ? "day" : "days"} in forecast</span>
+        <span>DD {money(totals.paidDiningDollarsCents)}</span>
+        <span>Cash {money(totals.paidTritonCashCents)}</span>
+        {totals.unfundedCents > 0 && <span className="text-[var(--danger)]">Unfunded {money(totals.unfundedCents)}</span>}
       </div>
     </div>
   );

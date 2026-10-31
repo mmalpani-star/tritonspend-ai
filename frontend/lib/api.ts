@@ -11,6 +11,7 @@ import {
   WalletBalances,
   WalletStatus
 } from "./types";
+import { errorDetail } from "./api-errors";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -21,14 +22,8 @@ export async function createForecast(request: ForecastRequest): Promise<Forecast
     body: JSON.stringify(request)
   });
   if (!response.ok) {
-    let message = `Forecast request failed (${response.status})`;
-    try {
-      const body = (await response.json()) as { detail?: string };
-      if (body.detail) message = body.detail;
-    } catch {
-      // Preserve the useful HTTP status when the server has no JSON error body.
-    }
-    throw new Error(message);
+    // A non-JSON body (e.g. a proxy error page) keeps the useful HTTP status in the fallback.
+    throw new Error(errorDetail(await response.json().catch(() => null), `Forecast request failed (${response.status})`));
   }
   return (await response.json()) as ForecastResponse;
 }
@@ -55,18 +50,6 @@ export async function redeemInvite(token: string): Promise<AuthStatus> {
 }
 
 /** Turns FastAPI's string or validation-list `detail` into one readable message. */
-function errorDetail(body: unknown, fallback: string): string {
-  const detail = (body as { detail?: unknown } | null)?.detail;
-  if (typeof detail === "string" && detail) return detail;
-  if (Array.isArray(detail) && detail.length > 0) {
-    return detail
-      .map((item) => String((item as { msg?: unknown }).msg ?? "").replace(/^Value error, /, ""))
-      .filter(Boolean)
-      .join(" ") || fallback;
-  }
-  return fallback;
-}
-
 async function startAccountSession(path: string, body: object, fallback: string): Promise<AuthStatus> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",

@@ -29,6 +29,7 @@ from typing import Optional, Sequence
 from tritonspend.core.money import to_stored_cents
 
 from .models import Account, BalanceCheckin, EntryType, LedgerEntry
+from .schemas import MAX_FORECAST_DAYS
 
 
 WALLET_SOURCE = "wallet"
@@ -42,7 +43,7 @@ CHARTABLE_SCHEMA_VERSIONS = frozenset(
 ENGINE_VERSION = "tritonspend-core-0.1.0+participant-forecast.v3"
 END_OF_DAY_ENGINE_VERSION = "tritonspend-core-0.1.0+participant-forecast.v2"
 STALE_BASELINE_DAYS = 14
-MAX_PARTICIPANT_FORECAST_DAYS = 366
+MAX_PARTICIPANT_FORECAST_DAYS = MAX_FORECAST_DAYS  # same limit as anonymous forecasts
 ACCOUNTS = ("dining_dollars", "triton_cash")
 ACCOUNT_LABELS = {"dining_dollars": "Dining Dollars", "triton_cash": "Triton Cash"}
 _SIGN = {EntryType.spending: -1, EntryType.deposit: 1, EntryType.refund: 1}

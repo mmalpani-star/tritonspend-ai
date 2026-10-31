@@ -39,6 +39,10 @@ def create_forecast(
     """Map a request to the core, run it once, and serialize its result."""
     try:
         core_input = to_core_input(request, today)
+    except ValueError as exc:
+        # Mapping rejects contract violations with ValueError; these are client errors.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    try:
         result = forecast(
             core_input.date_range,
             core_input.balances,

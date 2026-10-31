@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { deleteParticipantData, downloadParticipantData, setBalanceThresholds } from "../lib/api";
 import { Account, Wallet, WalletStatus } from "../lib/types";
 import { centsToInput, formatMoney, useWallet } from "../lib/wallet";
-import { dollarsToCents } from "./forecast-form";
+import { parseWalletAmounts } from "../lib/forecast-limits";
 import { WalletBalancesCard } from "./wallet-balances";
 
 const LABELS: Record<Account, string> = { dining_dollars: "Dining Dollars", triton_cash: "Triton Cash" };
@@ -25,16 +25,18 @@ function WarningSettings({ data, onSaved }: { data: WalletStatus; onSaved: () =>
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const diningCents = dollarsToCents(dining);
-    const cashCents = dollarsToCents(cash);
-    if (diningCents === null || cashCents === null) {
-      setMessage({ error: true, text: "Enter both amounts in dollars, like 100 or 75.50. Use 0 to turn a warning off." });
+    const amounts = parseWalletAmounts(dining, cash, {
+      labels: { dining: "The Dining Dollars warning amount", cash: "The Triton Cash warning amount" },
+      example: "like 100 or 75.50 (use 0 to turn a warning off)"
+    });
+    if ("error" in amounts) {
+      setMessage({ error: true, text: amounts.error });
       return;
     }
     setBusy(true);
     setMessage(null);
     try {
-      await setBalanceThresholds({ dining_dollars_cents: diningCents, triton_cash_cents: cashCents });
+      await setBalanceThresholds(amounts);
       await onSaved();
       setMessage({ error: false, text: "Warning amounts saved to your account." });
     } catch (error) {

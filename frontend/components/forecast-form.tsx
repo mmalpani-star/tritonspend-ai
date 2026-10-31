@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 import { Account, ForecastRequest, HabitInput, ParticipantForecastRequest, Scenario } from "../lib/types";
 import { campusToday } from "../lib/datetime";
+import { balanceError, dateRangeError, dollarsToCents, validateHabits } from "../lib/forecast-limits";
 import { InfoLabel } from "./info-label";
 
 // With onSubmitSaved, the start date and balances come from the participant's
@@ -26,14 +27,6 @@ const emptyHabit = (): HabitInput => ({
   price_cents: 0,
   eligible_accounts: []
 });
-
-export function dollarsToCents(value: string): number | null {
-  const trimmed = value.trim();
-  if (!/^\d+(?:\.\d{1,2})?$/.test(trimmed)) return null;
-  const [whole, fraction = ""] = trimmed.split(".");
-  const cents = Number(whole) * 100 + Number((fraction + "00").slice(0, 2));
-  return Number.isSafeInteger(cents) ? cents : null;
-}
 
 export function ForecastForm({ loading, onSubmit, onSubmitSaved }: Props) {
   const id = useId();
@@ -61,20 +54,19 @@ export function ForecastForm({ loading, onSubmit, onSubmitSaved }: Props) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    const habitCents = habitPrices.map(dollarsToCents);
-    const invalidHabits = habits.some((habit, index) => !habit.name.trim() || !/^\d+(?:\/\d+)?$/.test(habit.frequency) || habitCents[index] === null || habit.eligible_accounts.length === 0);
-    const habitError = "Each habit needs a name, a price with up to two decimal places, a fraction-style frequency, and at least one eligible account.";
+    const checked = validateHabits(habits, habitPrices);
     if (onSubmitSaved) {
+      // The start date and balances come from the saved wallet; the server checks the period against them.
       if (!endDate) {
         setError("Choose an end date of today or later.");
         return;
       }
-      if (habits.length === 0 || invalidHabits) {
-        setError(habits.length === 0 ? "Add at least one habit to forecast spending." : habitError);
+      if ("error" in checked) {
+        setError(checked.error);
         return;
       }
       try {
-        await onSubmitSaved({ end_date: endDate, scenario, habits: habits.map((habit, index) => ({ ...habit, price_cents: habitCents[index]! })) });
+        await onSubmitSaved({ end_date: endDate, scenario, habits: checked.habits });
       } catch (submissionError) {
         setError(submissionError instanceof Error ? submissionError.message : "Unable to create forecast.");
       }
@@ -86,8 +78,15 @@ export function ForecastForm({ loading, onSubmit, onSubmitSaved }: Props) {
       setError("Add both dates and enter balances as dollars with up to two decimal places.");
       return;
     }
-    if (invalidHabits) {
-      setError(habitError);
+    const inputError = dateRangeError(startDate, endDate)
+      ?? balanceError("The Dining Dollars balance", diningCents)
+      ?? balanceError("The Triton Cash balance", cashCents);
+    if (inputError) {
+      setError(inputError);
+      return;
+    }
+    if ("error" in checked) {
+      setError(checked.error);
       return;
     }
     try {
@@ -97,7 +96,7 @@ export function ForecastForm({ loading, onSubmit, onSubmitSaved }: Props) {
         dining_dollars_cents: diningCents,
         triton_cash_cents: cashCents,
         scenario,
-        habits: habits.map((habit, index) => ({ ...habit, price_cents: habitCents[index]! }))
+        habits: checked.habits
       });
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to create forecast.");

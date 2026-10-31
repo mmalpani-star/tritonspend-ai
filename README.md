@@ -32,6 +32,40 @@ account for payment eligibility and do not guarantee that a wallet can pay for
 particular meals. There is no menu ingestion, NumPy, pandas, or machine-learning
 dependency.
 
+## API input limits
+
+The API enforces these limits (constants in `backend/app/schemas.py`) and
+answers a request that breaks one with `422`, never `500`. They apply equally
+to anonymous forecasts (`POST /api/v1/forecasts`) and saved forecasts
+(`POST /api/v1/pilot/forecasts`), which share one frequency rule
+(`frequency_error`). The forecast form checks the same limits for earlier,
+habit-specific feedback (`frontend/lib/forecast-limits.ts`), but the backend
+is authoritative. The forecasting core itself is limit-free.
+
+| Input | Limit | Why |
+| --- | --- | --- |
+| Forecast period | At most 366 inclusive days | A full academic year or a leap year; bounds the work per request. Saved forecasts count from the first day covered by the saved wallet balances. |
+| Habits | 1 to 50 per saved forecast; at most 50 per anonymous forecast | Far more than a realistic set of dining habits. |
+| Frequency string | `n` or `n/d`, ASCII digits only, at most 9 characters | Rejects Unicode digits (`²`, `١`) and oversized numbers before any integer parsing. |
+| Frequency denominator | 1 to 365 | `1/365` is once a year; zero is undefined. |
+| Frequency value | 0 to 24 per day | Allows hourly purchases. Zero stays valid. |
+| Habit price | $0 to $1,000 (`100_000` cents) | Well above any single campus food purchase. |
+| Wallet balance | $0 to $100,000 (`10_000_000` cents) per wallet | Applies to forecast balances, saved wallet balances, older balance check-ins, and warning amounts. Well above any Dining Dollars or Triton Cash balance. |
+| Older ledger entry amount | Up to $100,000 | Same bound as balances. |
+
+Why these bounds matter:
+
+- **Exact amounts in the browser.** The largest possible cumulative amount is
+  about `100_000 * 24 * 6/5 * 366 * 50`, or 5.3e10 cents, far below
+  JavaScript's `Number.MAX_SAFE_INTEGER` (about 9.0e15), so every cent value in
+  a response is exact when the frontend parses it.
+- **Database safety.** Stored cents columns are 32-bit integers (up to about
+  $21.4 million); the $100,000 cap keeps every saved amount far inside them
+  without a migration. Records saved before the cap remain readable.
+- **No server errors from bad input.** Unicode digits, zero denominators,
+  very long strings, and far-future dates used to be able to reach integer
+  parsing or date arithmetic and fail with `500`; they are now rejected first.
+
 ## Persistence foundation
 
 The M1 persistence schema is managed with SQLAlchemy and Alembic. It stores

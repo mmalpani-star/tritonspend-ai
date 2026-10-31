@@ -7,7 +7,7 @@ from typing import Annotated, Literal, Optional
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictInt, StrictStr
 
-from .schemas import HabitRequest
+from .schemas import MAX_BALANCE_CENTS, MAX_HABITS, HabitRequest
 
 
 def as_utc(value: datetime) -> datetime:
@@ -28,8 +28,8 @@ class BalanceCheckinRequest(BaseModel):
 
     effective_date: date
     observed_at: Optional[datetime] = None
-    dining_dollars_cents: StrictInt = Field(ge=0)
-    triton_cash_cents: StrictInt = Field(ge=0)
+    dining_dollars_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
+    triton_cash_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
 
 
 class WalletSaveRequest(BaseModel):
@@ -38,8 +38,8 @@ class WalletSaveRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     effective_date: date
-    dining_dollars_cents: StrictInt = Field(ge=0)
-    triton_cash_cents: StrictInt = Field(ge=0)
+    dining_dollars_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
+    triton_cash_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
 
 
 class LedgerEntryRequest(BaseModel):
@@ -48,7 +48,7 @@ class LedgerEntryRequest(BaseModel):
     occurred_on: date
     account: AccountName
     entry_type: EntryTypeName
-    amount_cents: StrictInt = Field(gt=0)
+    amount_cents: StrictInt = Field(gt=0, le=MAX_BALANCE_CENTS)
     merchant_or_note: Optional[StrictStr] = Field(default=None, max_length=500)
 
 
@@ -70,8 +70,8 @@ class BalanceCheckinResponse(BaseModel):
 class BalanceThresholdRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    dining_dollars_cents: StrictInt = Field(ge=0)
-    triton_cash_cents: StrictInt = Field(ge=0)
+    dining_dollars_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
+    triton_cash_cents: StrictInt = Field(ge=0, le=MAX_BALANCE_CENTS)
 
 
 class BalanceWarningResponse(BaseModel):
@@ -182,7 +182,7 @@ class ParticipantForecastRequest(BaseModel):
 
     end_date: date
     scenario: Literal["frugal", "expected", "higher"] = "expected"
-    habits: list[HabitRequest] = Field(min_length=1, max_length=50)
+    habits: list[HabitRequest] = Field(min_length=1, max_length=MAX_HABITS)
 
 
 class WalletAmounts(BaseModel):

@@ -6,7 +6,7 @@ import { saveWalletBalances } from "../lib/api";
 import { Account, Wallet, WalletBalances } from "../lib/types";
 import { campusToday, formatCalendarDate, formatTimestamp } from "../lib/datetime";
 import { WalletLoad, centsToInput, describeAge, formatMoney } from "../lib/wallet";
-import { dollarsToCents } from "./forecast-form";
+import { parseWalletAmounts } from "../lib/forecast-limits";
 import { InfoLabel } from "./info-label";
 import { AnimatedMoney } from "./visual/animated-money";
 
@@ -42,10 +42,12 @@ export function WalletForm({ initial, submitLabel, onSaved, onCancel }: FormProp
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    const diningCents = dollarsToCents(dining);
-    const cashCents = dollarsToCents(cash);
-    if (diningCents === null || cashCents === null) {
-      setError("Enter both balances in dollars, like 1250 or 1250.50.");
+    const amounts = parseWalletAmounts(dining, cash, {
+      labels: { dining: "The Dining Dollars balance", cash: "The Triton Cash balance" },
+      example: "like 1250 or 1250.50"
+    });
+    if ("error" in amounts) {
+      setError(amounts.error);
       return;
     }
     if (!asOf || asOf > today) {
@@ -54,7 +56,7 @@ export function WalletForm({ initial, submitLabel, onSaved, onCancel }: FormProp
     }
     setBusy(true);
     try {
-      const saved = await saveWalletBalances({ effective_date: asOf, dining_dollars_cents: diningCents, triton_cash_cents: cashCents });
+      const saved = await saveWalletBalances({ effective_date: asOf, ...amounts });
       await onSaved(saved);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to save your wallet balances.");
