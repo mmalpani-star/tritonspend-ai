@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>TritonSpend — Participant Consent & Privacy Notice</title>
+  <style>
+    :root { color-scheme: dark; --bg:#080d24; --panel:#111a3a; --text:#edf1ff; --muted:#b7c1e5; --accent:#78d9ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:36px 18px 64px; background:linear-gradient(145deg,#080d24,#10183b); color:var(--text); font:16px/1.7 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { max-width:900px; margin:auto; padding:clamp(24px,5vw,52px); background:rgba(17,26,58,.94); border:1px solid #344477; border-radius:22px; }
+    h1,h2 { line-height:1.2; } h1 { font-size:clamp(2rem,5vw,3rem); margin:8px 0 12px; } h2 { margin-top:34px; font-size:1.35rem; color:var(--accent); }
+    p,li { color:var(--muted); } strong { color:var(--text); }
+    a { color:var(--accent); } .eyebrow { color:#ffd84d; letter-spacing:.16em; text-transform:uppercase; font-size:.75rem; font-weight:700; }
+    .notice { padding:16px 18px; border:1px solid #49629c; border-radius:12px; background:#0b1432; }
+    footer { margin-top:42px; padding-top:20px; border-top:1px solid #344477; color:var(--muted); font-size:.9rem; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">TritonSpend · Version 1.0</div>
+  <h1>Participant Consent & Privacy Notice</h1>
+  <p><strong>Effective date:</strong> November 8, 2026</p>
+  <p>TritonSpend is an independent student-built dining-plan planning project. It is not operated, sponsored, or endorsed by the University of California, San Diego (UC San Diego or UCSD). This notice explains the information the app handles and what participation means.</p>
+
+  <div class="notice">
+    <strong>Please read before using the app.</strong>
+    <p>Participation is voluntary. TritonSpend is a planning tool, not an official UCSD dining-plan account, payment system, or source of guaranteed menu, balance, or spending information. Forecasts are estimates and may be inaccurate. You remain responsible for checking your actual balances and purchases through official channels.</p>
+  </div>
+
+  <h2>1. Information the app handles</h2>
+  <p>Depending on the features you use, TritonSpend may store:</p>
+  <ul>
+    <li><strong>Account information:</strong> your email address, account creation information, and account status.</li>
+    <li><strong>Planning information:</strong> dining-plan balances and balance check-ins, spending or ledger entries, zero-spending confirmations, date ranges, configured warning thresholds, and information you enter about your planning habits.</li>
+    <li><strong>Forecast information:</strong> forecast snapshots and the inputs needed to produce or display your planning estimates.</li>
+    <li><strong>Saved information:</strong> favourite venues and dishes.</li>
+    <li><strong>Food Chat information:</strong> reviews, comments and replies, votes, reports, and a generated display pseudonym.</li>
+    <li><strong>Consent and security records:</strong> consent-event history and technical records needed to operate account sessions and protect the service.</li>
+  </ul>
+  <p>Do not enter passwords, payment-card numbers, government identifiers, medical information, or other sensitive information into reviews or comments.</p>
+
+  <h2>2. Food Chat and public visibility</h2>
+  <p>Food Chat is a community feature. Reviews and comments that are visible in Food Chat can be read by other app users. Authors are displayed using a generated pseudonym rather than their account email or participant ID. A pseudonym does not make the content anonymous: details you include in a post may identify you.</p>
+  <p>Users can vote on and report reviews or comments. Moderators may review reported content and hide, restore, or remove content. Moderation actions are recorded in a moderation log. The log records the action and target identifiers, not a copy of the post content. Moderation availability and response times are not guaranteed.</p>
+
+  <h2>3. Exporting and deleting your account</h2>
+  <p>The app provides an account-data export for the signed-in participant. The export includes that participant's balance check-ins, ledger entries, zero-spending confirmations, configured thresholds, consent-event history, forecast snapshots, Food Chat contributions, pseudonym, and favourites. It excludes invite-token, session, and CSRF hashes.</p>
+  <p>You can request account deletion through the account controls. Deletion removes your planning records, favourites, sessions, and Food Chat contributions according to the app's implemented deletion behavior. In particular:</p>
+  <ul>
+    <li>Your reviews are deleted with the comments in those review threads, including replies written by other users, and the votes and reports attached to that content.</li>
+    <li>Your comments on other users' reviews are deleted with votes and reports on those comments. Other users' replies are retained and moved to the nearest surviving parent comment, or become top-level comments.</li>
+    <li>Your votes and reports are deleted. Other participants' unrelated content is not affected.</li>
+  </ul>
+  <p>The participant record is retained with a deletion timestamp, and append-only consent-event records are retained as a minimal consent audit record. Moderation action records may also remain as action metadata without a copy of the removed content. Account deletion revokes your sessions; you may need a new invitation to sign in again.</p>
+
+  <h2>4. Consent, withdrawal, and choice</h2>
+  <p>You must accept this notice before recording balances or saving forecasts and before using Food Chat write features. You may stop using TritonSpend at any time. The app provides a consent-withdrawal action; withdrawing consent does not prevent you from requesting account deletion. If you withdraw consent, stop submitting new information and use the account controls to request deletion if you want your account data removed.</p>
+  <p>Acceptance is recorded as a consent event with the document version. This notice is version <strong>1.0</strong>. If the notice changes materially, the project should publish a new version and communicate the change to participants.</p>
+
+  <h2>5. Hosting and handling of information</h2>
+  <p>TritonSpend uses hosted infrastructure for its website, backend service, and database. Information submitted to the app is transmitted to and stored by the services used to operate it. The project does not make a promise here about a specific retention period for provider logs or backups, and those periods have not been established in this notice.</p>
+  <p>This notice does not claim that information is never processed by additional service providers. The project should update this section if it adds analytics, external AI processing, new integrations, or other data-sharing arrangements.</p>
+
+  <h2>6. No official UCSD affiliation; no guaranteed outcomes</h2>
+  <p>TritonSpend is an independent student project and is not an official UCSD service. It is not affiliated with UCSD Dining Services and does not change, access, or control official dining-plan balances. Any venue, menu, price, balance, or forecast information may be incomplete, delayed, or incorrect. Verify important information independently.</p>
+
+  <h2>7. Contact</h2>
+  <p>For questions about this notice, privacy, or account deletion, contact <a href="mailto:malpanimadhav105@gmail.com">malpanimadhav105@gmail.com</a>.</p>
+
+  <div class="notice">
+    <strong>What accepting means</strong>
+    <p>By selecting “Accept consent” in TritonSpend, you confirm that you have read this Participant Consent & Privacy Notice, understand that Food Chat posts may be visible to other users under a generated pseudonym, understand the account export and deletion behavior described above, and voluntarily agree to use the app under these terms.</p>
+  </div>
+
+  <footer>
+    TritonSpend · Participant Consent & Privacy Notice · Version 1.0 · November 8, 2026<br>
+    This is a project disclosure for the current app behavior, not legal advice or a determination that the project is approved for academic human-subjects research. Consult the appropriate UCSD office before using participant data for formal research.
+  </footer>
+</main>
+</body>
+</html>
