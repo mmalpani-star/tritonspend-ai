@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #182b49;
+  --blue: #00629b;
+  --yellow: #ffcd00;
+  --gold: #c69214;
+  --turquoise: #00c6d7;
+  --sand: #f5f0e6;
+  --stone: #b6b1a9;
+  --page: #f7f9fc;
+  --surface: #ffffff;
+  --surface-muted: #eef3f8;
+  --text: #182b49;
+  --text-muted: #5f6f82;
+  --border: #dbe4ed;
+  --primary: #00629b;
+  --primary-strong: #004f7d;
+  --accent: #ffcd00;
+  --success: #18794e;
+  --danger: #b42318;
+  /* Trajectory chart series, validated against the #ffffff light surfaces. */
+  --chart-projected: #2a78d6;
+  --chart-actual: #eb6834;
+  /* Theme slider: UCSD blue track with gold accents. */
+  --slider-track: #00629b;
+  --slider-accent: #ffcd00;
+  --slider-text: #ffffff;
+}
+
+[data-theme="midnight"] {
+  --slider-track: #1a304b;
+  --slider-accent: #3ca7df;
+  --slider-text: #f4f7fb;
+  --chart-projected: #3987e5;
+  --chart-actual: #d95926;
+  --page: #0d182a;
+  --surface: #14243b;
+  --surface-muted: #1a304b;
+  --text: #f4f7fb;
+  --text-muted: #b8c7d8;
+  --border: #2b4663;
+  --primary: #3ca7df;
+  --primary-strong: #74c8f0;
+  --accent: #ffcd00;
+  --success: #62d79b;
+  --danger: #ff8c82;
+}
+
+[data-theme="formal"] {
+  --slider-track: #182b49;
+  --slider-accent: #c69214;
+  --slider-text: #f5f0e6;
+  --page: #f5f0e6;
+  --surface: #ffffff;
+  --surface-muted: #eee8dc;
+  --text: #182b49;
+  --text-muted: #617083;
+  --border: #ddd2c0;
+  --primary: #182b49;
+  --primary-strong: #0f1f36;
+  --accent: #c69214;
+  --success: #287a58;
+  --danger: #b42318;
+}
+
+[data-theme="coastal"] {
+  /* Deep teal: white labels and the gold trident fail contrast on raw turquoise. */
+  --slider-track: #00707d;
+  --slider-accent: #00c6d7;
+  --slider-text: #ffffff;
+  --page: #f2fbfc;
+  --surface: #ffffff;
+  --surface-muted: #e4f5f7;
+  --text: #182b49;
+  --text-muted: #5b7181;
+  --border: #cbe8ec;
+  --primary: #00629b;
+  --primary-strong: #004f7d;
+  --accent: #00c6d7;
+  --success: #16755c;
+  --danger: #b42318;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--page); }
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 27rem),
+    var(--page);
+  color: var(--text);
+  font-family: var(--font-sans), sans-serif;
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+::selection { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}

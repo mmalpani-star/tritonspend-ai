@@ -1,0 +1,471 @@
+/*
+ * TritonSpend design system v2 — loaded last, so it refines the earlier layers.
+ *
+ * Identity: deep midnight navy and ocean blue with an indigo / blue-violet core, electric blue and
+ * cyan highlights, restrained magenta-violet light, and small warm yellow-orange accents.
+ * Everything reads tokens below; themes change tokens, never component rules.
+ */
+
+/* ===================== 1. Scale ===================== */
+/* Fluid root size: Tailwind spacing and type are rem-based, so the whole UI grows with the screen
+   (16px on phones and small laptops, about 18-19px on large desktop monitors). */
+html { font-size: clamp(100%, 0.78rem + 0.3vw, 118.75%); }
+
+:root {
+  --shell: min(94vw, 1720px);
+  --gutter: clamp(1rem, 0.6rem + 1.6vw, 2.5rem);
+  --step-hero: clamp(2.5rem, 1.5rem + 3.6vw, 5.4rem);
+  --step-page: clamp(1.9rem, 1.35rem + 1.7vw, 3.25rem);
+  --step-section: clamp(1.35rem, 1.1rem + 0.75vw, 2.05rem);
+  --step-lede: clamp(1rem, 0.94rem + 0.3vw, 1.2rem);
+  --radius-xl: clamp(1.25rem, 1rem + 0.8vw, 2rem);
+  --radius-lg: clamp(1rem, 0.85rem + 0.5vw, 1.5rem);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-shell { width: var(--shell); margin-inline: auto; }
+@media (max-width: 640px) { .page-shell { width: calc(100vw - 2rem); } }
+
+/* ===================== 2. Theme tokens ===================== */
+:root {
+  /* Classic Triton: crisp light canvas, indigo-blue core, warm yellow accent. */
+  --page: #f3f5ff;
+  --surface: #ffffff;
+  --surface-muted: #eceffd;
+  --text: #121738;
+  --text-muted: #545d88;
+  --border: #dcdff3;
+  --primary: #3b4fd8;
+  --primary-strong: #2b39a8;
+  --accent: #ffc53d;
+  --success: #15784c;
+  --danger: #c0262d;
+  --chart-projected: #4b5cf0;
+  --chart-actual: #f0663a;
+  --chart-ideal: #6b7299;
+  --chart-plan: #c98a12;
+  --chart-band: #7d6bff;
+  --shadow-rgb: 22 27 74;
+  --glow-a: 109 92 255;   /* indigo-violet */
+  --glow-b: 54 196 255;   /* electric cyan */
+  --glow-c: 255 92 170;   /* magenta */
+  --glow-d: 255 186 64;   /* warm yellow-orange */
+  --page-backdrop:
+    radial-gradient(60rem 40rem at 8% -10%, rgb(var(--glow-a) / 0.16), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 0%, rgb(var(--glow-b) / 0.12), transparent 60%),
+    radial-gradient(40rem 30rem at 85% 75%, rgb(var(--glow-c) / 0.07), transparent 60%);
+  --stage: linear-gradient(135deg, #0b1236 0%, #17206b 45%, #3a2a9e 78%, #5b2fa8 100%);
+  --stage-text: #ffffff;
+  --stage-muted: rgb(226 230 255 / 0.84);
+  --hero-stage: var(--stage);
+  --button-gradient: linear-gradient(120deg, #2f5fe0 0%, #4b4fe6 50%, #7a45e8 100%);
+  --nav-active: linear-gradient(120deg, #2f5fe0, #5146e6 60%, #7a45e8);
+  --header-bg: rgb(243 245 255 / 0.74);
+  --depth-1: 0 1px 1px rgb(var(--shadow-rgb) / 0.04), 0 2px 6px -1px rgb(var(--shadow-rgb) / 0.06), 0 12px 24px -10px rgb(var(--shadow-rgb) / 0.1);
+  --depth-2: 0 1px 1px rgb(var(--shadow-rgb) / 0.04), 0 4px 10px -2px rgb(var(--shadow-rgb) / 0.06), 0 22px 44px -16px rgb(var(--shadow-rgb) / 0.16), 0 44px 90px -40px rgb(var(--glow-a) / 0.32);
+  --depth-3: 0 2px 2px rgb(var(--shadow-rgb) / 0.04), 0 8px 18px -4px rgb(var(--shadow-rgb) / 0.08), 0 34px 64px -20px rgb(var(--shadow-rgb) / 0.22), 0 60px 120px -40px rgb(var(--glow-a) / 0.45), 0 0 0 1px rgb(var(--glow-a) / 0.12);
+  --card-shadow: var(--depth-2);
+  --card-hover-shadow: var(--depth-3);
+}
+
+[data-theme="midnight"] {
+  /* Midnight Triton: the most cinematic — deep navy into indigo, luminous cyan and violet light. */
+  --page: #060a1d;
+  --surface: #0e1431;
+  --surface-muted: #151c44;
+  --text: #eef1ff;
+  --text-muted: #a9b2dc;
+  --border: #252e62;
+  --primary: #86a6ff;
+  --primary-strong: #b3c6ff;
+  --accent: #ffcf5a;
+  --success: #5fdc9f;
+  --danger: #ff8a8a;
+  --chart-projected: #7f9bff;
+  --chart-actual: #ff8a5c;
+  --chart-ideal: #9aa3cf;
+  --chart-plan: #ffcf5a;
+  --chart-band: #9b8bff;
+  --shadow-rgb: 0 0 0;
+  --glow-a: 124 98 255;
+  --glow-b: 46 214 255;
+  --glow-c: 236 72 190;
+  --glow-d: 255 196 80;
+  --page-backdrop:
+    radial-gradient(70rem 46rem at 0% -10%, rgb(var(--glow-a) / 0.32), transparent 62%),
+    radial-gradient(56rem 40rem at 100% 5%, rgb(var(--glow-b) / 0.16), transparent 62%),
+    radial-gradient(46rem 36rem at 80% 90%, rgb(var(--glow-c) / 0.14), transparent 62%);
+  --stage: linear-gradient(135deg, #050920 0%, #0f1650 40%, #2c1f86 75%, #5a1f8f 100%);
+  --header-bg: rgb(6 10 29 / 0.7);
+  --depth-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 18px 44px -18px rgb(0 0 0 / 0.75), 0 40px 90px -40px rgb(var(--glow-a) / 0.55);
+  --depth-3: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 28px 60px -20px rgb(0 0 0 / 0.85), 0 60px 120px -40px rgb(var(--glow-a) / 0.7), 0 0 0 1px rgb(var(--glow-b) / 0.22);
+}
+
+[data-theme="formal"] {
+  /* Formal Triton: warm sand paper with ink-navy and indigo; brass instead of yellow. */
+  --page: #f5f0e6;
+  --surface: #fffdf8;
+  --surface-muted: #efe8da;
+  --text: #19203f;
+  --text-muted: #5b6080;
+  --border: #e1d6c2;
+  --primary: #33408f;
+  --primary-strong: #222c6a;
+  --accent: #d39a2c;
+  --chart-projected: #3f4fb0;
+  --chart-actual: #c45a2a;
+  --chart-ideal: #6d6f88;
+  --chart-plan: #a8770f;
+  --chart-band: #6f63c4;
+  --shadow-rgb: 46 38 24;
+  --glow-a: 96 88 190;
+  --glow-b: 120 170 210;
+  --glow-c: 210 120 150;
+  --glow-d: 211 154 44;
+  --page-backdrop:
+    radial-gradient(60rem 40rem at 6% -10%, rgb(var(--glow-a) / 0.1), transparent 60%),
+    radial-gradient(48rem 34rem at 100% 0%, rgb(var(--glow-d) / 0.12), transparent 60%);
+  --stage: linear-gradient(135deg, #141a3d 0%, #222b63 55%, #3d3880 100%);
+  --button-gradient: linear-gradient(120deg, #222c6a 0%, #33408f 60%, #4d4aa6 100%);
+  --nav-active: linear-gradient(120deg, #222c6a, #3d4699);
+  --header-bg: rgb(245 240 230 / 0.78);
+}
+
+[data-theme="coastal"] {
+  /* Coastal Triton: airy ocean light — cyan and sky with a violet undertone. */
+  --page: #eef9ff;
+  --surface: #ffffff;
+  --surface-muted: #e2f3fb;
+  --text: #0e2140;
+  --text-muted: #4b6585;
+  --border: #cbe6f2;
+  --primary: #1c5fd6;
+  --primary-strong: #1446a3;
+  --accent: #14c2d9;
+  --chart-projected: #2563eb;
+  --chart-actual: #ef6b3b;
+  --chart-ideal: #5b7391;
+  --chart-plan: #0e9fb3;
+  --chart-band: #5b8cff;
+  --shadow-rgb: 12 40 80;
+  --glow-a: 84 110 255;
+  --glow-b: 20 194 217;
+  --glow-c: 168 110 255;
+  --glow-d: 255 190 92;
+  --page-backdrop:
+    radial-gradient(60rem 40rem at 0% -10%, rgb(var(--glow-b) / 0.16), transparent 60%),
+    radial-gradient(52rem 36rem at 100% 0%, rgb(var(--glow-a) / 0.12), transparent 60%),
+    radial-gradient(40rem 30rem at 80% 80%, rgb(var(--glow-c) / 0.08), transparent 60%);
+  --stage: linear-gradient(135deg, #062347 0%, #0b4a8a 50%, #3b4fd8 100%);
+  --button-gradient: linear-gradient(120deg, #1c5fd6 0%, #2e7be8 50%, #5b5cf0 100%);
+  --nav-active: linear-gradient(120deg, #1c5fd6, #3d6ff0 60%, #5b5cf0);
+  --header-bg: rgb(238 249 255 / 0.76);
+}
+
+/* ===================== 3. Canvas ===================== */
+html { background: var(--page); }
+body {
+  background: var(--page-backdrop), var(--page);
+  background-attachment: fixed;
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 900px) { body { background-attachment: scroll; } }
+
+/* ===================== 4. Typography ===================== */
+.panel-title { font-size: var(--step-section); line-height: 1.15; letter-spacing: -0.02em; }
+.panel-title.text-3xl, h1.panel-title { font-size: var(--step-page); line-height: 1.05; letter-spacing: -0.03em; }
+.food-hero-title, .campus-hero-title { letter-spacing: -0.035em; }
+.eyebrow, .campus-hero-eyebrow { letter-spacing: 0.22em; }
+.field-help, .food-muted { font-size: max(0.8125rem, 0.78rem + 0.1vw); }
+
+/* ===================== 5. Surfaces and depth ===================== */
+.panel {
+  border-radius: var(--radius-xl);
+  padding: clamp(1.25rem, 0.8rem + 1.6vw, 2.5rem);
+  box-shadow: var(--depth-2);
+}
+.food-card, .you-card, .trajectory-card, .feature-card, .metric-card, .wallet-tile, .history-item, .food-station-card, .food-menu-item, .you-stat {
+  transition: transform 420ms var(--ease-out), box-shadow 420ms var(--ease-out), border-color 300ms ease;
+}
+.food-card, .you-card, .trajectory-card { border-radius: var(--radius-lg); box-shadow: var(--depth-1); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .food-card:hover, .you-card:hover, .feature-card:hover, .food-station-card:hover, .you-stat:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--depth-3);
+  }
+}
+
+/* Buttons: tactile gradient with an inner highlight and a coloured lift. */
+.primary-button {
+  background: var(--button-gradient);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 10px 24px -10px rgb(var(--glow-a) / 0.75), 0 2px 4px rgb(var(--shadow-rgb) / 0.12);
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), filter 220ms ease;
+}
+.primary-button:hover:not(:disabled) { transform: translateY(-1px); filter: saturate(1.1); box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 16px 32px -12px rgb(var(--glow-a) / 0.9); }
+.secondary-button { transition: transform 220ms var(--ease-out), border-color 200ms ease, background 200ms ease; }
+.secondary-button:hover:not(:disabled) { transform: translateY(-1px); }
+.field-label input, .field-label select, .field-label textarea { border-radius: 0.9rem; }
+
+/* ===================== 6. Header ===================== */
+.site-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--header-bg);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.site-header-bar .site-header { padding-block: clamp(0.7rem, 0.5rem + 0.5vw, 1.1rem); }
+.site-header-bar .site-header::after { display: none; }
+.brand-word { font-family: var(--font-display); font-size: clamp(1.1rem, 1rem + 0.4vw, 1.4rem); font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+
+/* The theme slider as a lit glass control. */
+.theme-slider {
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 12px 28px -14px rgb(var(--glow-a) / 0.8), 0 0 0 1px rgb(var(--glow-a) / 0.25);
+}
+
+/* Dashboard navigation: wider, calmer, lit active tab. */
+.dashboard-nav { border-radius: 1.25rem; padding: 0.45rem; box-shadow: var(--depth-1); }
+.nav-tab { padding: 0.65rem 1rem; border-radius: 0.9rem; font-size: 0.95rem; }
+.nav-tab-active { box-shadow: 0 10px 24px -12px rgb(var(--glow-a) / 0.9); }
+
+/* ===================== 7. Cinematic stage (hero bands) ===================== */
+.stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--stage);
+  color: var(--stage-text);
+  box-shadow: var(--depth-3);
+}
+.stage::before {
+  /* Aurora ribbons (pink, orange, yellow, cyan) drifting across the blue. */
+  content: "";
+  position: absolute;
+  inset: -10% -5%;
+  z-index: -1;
+  background: url("/visual/aurora-weave.svg") center / cover no-repeat;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: stage-drift 26s ease-in-out infinite alternate;
+}
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(36rem 26rem at 12% 0%, rgb(var(--glow-b) / 0.32), transparent 60%),
+    radial-gradient(30rem 24rem at 92% 100%, rgb(var(--glow-c) / 0.3), transparent 62%),
+    radial-gradient(20rem 16rem at 70% 10%, rgb(var(--glow-d) / 0.18), transparent 60%),
+    url("/visual/spark-grain.svg") 0 0 / 420px 420px;
+  opacity: 0.9;
+}
+@keyframes stage-drift { from { transform: translate3d(-2%, 0, 0) scale(1.02); } to { transform: translate3d(2%, -2%, 0) scale(1.06); } }
+.stage-eyebrow { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase; color: rgb(var(--glow-b) / 1); }
+.stage-eyebrow::before { content: "[ "; opacity: 0.6; }
+.stage-eyebrow::after { content: " ]"; opacity: 0.6; }
+.stage-title { font-family: var(--font-display); font-size: var(--step-hero); font-weight: 700; line-height: 0.98; letter-spacing: -0.045em; }
+.stage-title em { font-style: normal; background: linear-gradient(100deg, #ffd166, #ff8fbf 55%, #9fd8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stage-lede { font-size: var(--step-lede); line-height: 1.6; color: var(--stage-muted); max-width: 38rem; }
+
+/* ===================== 8. Food Nearby ===================== */
+.food-stage { display: grid; gap: clamp(1.5rem, 1rem + 2vw, 3rem); padding: clamp(1.5rem, 1rem + 3vw, 4rem); align-items: center; }
+@media (min-width: 1024px) { .food-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); min-height: clamp(26rem, 32vw, 38rem); } }
+.food-stage .food-search-row { margin-top: clamp(1.25rem, 1rem + 1vw, 2rem); }
+.food-stage .food-search { background: rgb(255 255 255 / 0.96); color: #121738; box-shadow: 0 20px 40px -18px rgb(0 0 0 / 0.55); }
+.food-stage .food-search input { color: #121738; }
+.food-stage .food-locate { background: rgb(255 255 255 / 0.12); color: #fff; border-color: rgb(255 255 255 / 0.35); backdrop-filter: blur(8px); }
+.food-stage .food-locate:hover:not(:disabled) { background: rgb(255 255 255 / 0.2); }
+.food-stage-stats { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; margin-top: 1.5rem; font-size: 0.9rem; color: var(--stage-muted); }
+.food-stage-stats strong { display: block; font-family: var(--font-display); font-size: clamp(1.4rem, 1.1rem + 1vw, 2.2rem); color: #fff; letter-spacing: -0.02em; }
+
+/* Photo mosaic: one large plate with smaller plates floating around it. */
+.food-mosaic { position: relative; height: clamp(18rem, 30vw, 32rem); }
+.food-mosaic-tile {
+  position: absolute;
+  overflow: hidden;
+  border-radius: clamp(1rem, 0.8rem + 0.8vw, 1.75rem);
+  border: 3px solid rgb(255 255 255 / 0.9);
+  box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.65), 0 0 0 1px rgb(255 255 255 / 0.15);
+  animation: mosaic-float 9s ease-in-out infinite alternate;
+}
+.food-mosaic-tile img { transition: transform 1.2s var(--ease-out); }
+.food-mosaic-tile:hover img { transform: scale(1.06); }
+.food-mosaic-tile:nth-child(1) { inset: 8% 18% 10% 14%; z-index: 2; animation-delay: -2s; }
+.food-mosaic-tile:nth-child(2) { width: 34%; aspect-ratio: 1; left: 0; top: 0; z-index: 3; animation-delay: -5s; }
+.food-mosaic-tile:nth-child(3) { width: 30%; aspect-ratio: 4 / 3; right: 0; top: 4%; z-index: 3; animation-delay: -1s; }
+.food-mosaic-tile:nth-child(4) { width: 32%; aspect-ratio: 4 / 3; right: 4%; bottom: 0; z-index: 4; animation-delay: -7s; }
+.food-mosaic-tile:nth-child(5) { width: 26%; aspect-ratio: 1; left: 6%; bottom: 2%; z-index: 4; animation-delay: -3s; }
+@keyframes mosaic-float { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -10px, 0); } }
+.photo-tag {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 2;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: rgb(8 12 36 / 0.62);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
+}
+
+/* Venue cards with a large cover photo. */
+.food-grid { gap: clamp(1rem, 0.7rem + 1vw, 1.75rem); }
+@media (min-width: 720px) { .food-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1180px) { .food-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1700px) { .food-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.food-card { padding: 0; overflow: hidden; }
+.food-card-body { display: grid; gap: 0.75rem; padding: clamp(1rem, 0.85rem + 0.5vw, 1.4rem); }
+.food-cover { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-muted); }
+.food-cover img { transition: transform 900ms var(--ease-out); }
+.food-card:hover .food-cover img { transform: scale(1.05); }
+.food-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgb(8 12 36 / 0.45)); pointer-events: none; }
+.food-card-title { font-size: clamp(1.1rem, 1rem + 0.35vw, 1.35rem); }
+
+/* Venue and station banners. */
+.venue-banner { position: relative; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; height: clamp(12rem, 22vw, 22rem); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--depth-2); }
+.venue-banner > span { position: relative; overflow: hidden; }
+.venue-banner > span:first-child { grid-row: span 2; }
+.venue-banner > span:nth-child(2), .venue-banner > span:nth-child(3) { grid-column: span 2; }
+@media (min-width: 640px) {
+  .venue-banner { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
+  .venue-banner > span:nth-child(2), .venue-banner > span:nth-child(3) { grid-column: auto; }
+}
+@media (max-width: 639px) { .venue-banner > span:nth-child(n+2) { display: none; } .venue-banner { grid-template-columns: 1fr; } }
+.station-banner { position: relative; height: clamp(9rem, 16vw, 15rem); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--depth-2); }
+.station-banner::after, .venue-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgb(var(--glow-a) / 0.28), transparent 45%, rgb(var(--glow-c) / 0.18)); pointer-events: none; mix-blend-mode: soft-light; }
+
+/* ===================== 9. Spending Trajectory chart ===================== */
+.trajectory-card { padding: clamp(1rem, 0.8rem + 1vw, 2rem); }
+.chart-legend { font-size: 0.8rem; gap: 0.5rem 1.25rem; }
+.chart-tooltip { font-size: 0.8rem; min-width: 13rem; border-radius: 1rem; }
+.chart-play { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--chart-projected) 35%, var(--border)); background: color-mix(in srgb, var(--chart-projected) 8%, var(--surface)); color: var(--primary); font-size: 0.8rem; font-weight: 700; box-shadow: 0 6px 16px -10px rgb(var(--glow-a) / 0.8); }
+.chart-play:hover { border-color: var(--primary); }
+.chart-play:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(var(--glow-a) / 0.35); }
+.chart-track-note { font-weight: 600; color: var(--text); }
+.trajectory-card svg { cursor: crosshair; }
+.chart-readout { min-height: 1.4rem; font-size: 0.85rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.chart-readout strong { color: var(--text); }
+.chart-marker-halo { animation: marker-pulse 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes marker-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.35); } }
+.trajectory-layout { display: grid; gap: clamp(1rem, 0.8rem + 1vw, 1.75rem); }
+@media (min-width: 1280px) { .trajectory-layout { grid-template-columns: minmax(0, 2.4fr) minmax(18rem, 1fr); align-items: start; } }
+
+/* ===================== 10. Footer + Reach Out ===================== */
+.site-footer-v2 { position: relative; isolation: isolate; overflow: hidden; margin-top: clamp(2.5rem, 2rem + 3vw, 5rem); background: var(--stage); color: #fff; }
+.site-footer-v2::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url("/visual/aurora-weave.svg") center / cover no-repeat; opacity: 0.45; mix-blend-mode: screen; }
+.site-footer-v2::after { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(40rem 24rem at 10% 0%, rgb(var(--glow-b) / 0.25), transparent 60%), radial-gradient(36rem 24rem at 90% 100%, rgb(var(--glow-c) / 0.28), transparent 60%); }
+.footer-grid { display: grid; gap: clamp(1.5rem, 1rem + 2vw, 3rem); padding-block: clamp(2.5rem, 2rem + 3vw, 5rem) clamp(1.5rem, 1rem + 1vw, 2.5rem); }
+@media (min-width: 900px) { .footer-grid { grid-template-columns: 1.3fr 1fr; align-items: end; } }
+.footer-title { font-family: var(--font-display); font-size: clamp(2rem, 1.4rem + 2.6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+.footer-title em { font-style: normal; background: linear-gradient(100deg, #ffd166, #ff8fbf 55%, #9fd8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.footer-lede { margin-top: 0.9rem; max-width: 34rem; color: rgb(226 230 255 / 0.84); font-size: var(--step-lede); }
+.social-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.social-link {
+  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.15rem 0.75rem 0.8rem; border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.22); background: rgb(255 255 255 / 0.08); color: #fff; font-weight: 700;
+  backdrop-filter: blur(10px); transition: transform 260ms var(--ease-out), background 220ms ease, box-shadow 260ms var(--ease-out), border-color 220ms ease;
+}
+.social-link > span:first-child { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 9999px; background: rgb(255 255 255 / 0.14); }
+.social-link:hover, .social-link:focus-visible { transform: translateY(-2px); background: rgb(255 255 255 / 0.16); border-color: rgb(255 255 255 / 0.5); box-shadow: 0 16px 34px -14px rgb(var(--glow-c) / 0.8); outline: none; }
+.social-link:focus-visible { box-shadow: 0 0 0 3px rgb(255 209 102 / 0.8); }
+.social-link small { display: block; overflow-wrap: anywhere; font-size: 0.72rem; font-weight: 600; color: rgb(226 230 255 / 0.7); }
+.footer-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem 2rem; padding-block: 1.25rem 2rem; border-top: 1px solid rgb(255 255 255 / 0.14); font-size: 0.82rem; color: rgb(226 230 255 / 0.72); }
+.site-footer-v2 .photo-credits { color: rgb(226 230 255 / 0.72); }
+.site-footer-v2 .photo-credits a { color: #fff; }
+.site-footer-v2 .photo-credits summary { color: #fff; }
+
+/* ===================== 11. Scroll reveal (progressive, CSS-only) ===================== */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .panel, .food-card, .you-card, .trajectory-card, .feature-card, .stage, .venue-banner, .station-banner {
+      animation: reveal-rise linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
+@keyframes reveal-rise { from { opacity: 0; transform: translate3d(0, 32px, 0) scale(0.985); } }
+
+/* Loading shimmer for photo areas and skeletons. */
+.shimmer { background: linear-gradient(100deg, var(--surface-muted) 30%, color-mix(in srgb, var(--surface) 70%, var(--surface-muted)) 50%, var(--surface-muted) 70%) 0 0 / 200% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ===================== 12. Reduced motion ===================== */
+@media (prefers-reduced-motion: reduce) {
+  .stage::before, .food-mosaic-tile, .chart-marker-halo, .shimmer { animation: none !important; }
+  .food-card:hover .food-cover img, .food-mosaic-tile:hover img { transform: none; }
+}
+
+/* ===================== 13. Dashboard + campus bands ===================== */
+.campus-banner { border-radius: var(--radius-xl); box-shadow: var(--depth-3); min-height: clamp(15rem, 20vw, 24rem); padding: clamp(1.5rem, 1rem + 3vw, 4rem) !important; display: flex; flex-direction: column; justify-content: flex-end; }
+.campus-banner .stage-title { font-size: clamp(2.2rem, 1.4rem + 3vw, 4.6rem); }
+.feature-card { border-radius: var(--radius-xl) !important; box-shadow: var(--depth-2); }
+.feature-card-media { height: clamp(11rem, 7rem + 7vw, 17rem); }
+.feature-card-body { padding: clamp(1.1rem, 0.9rem + 0.8vw, 1.75rem) !important; }
+.wallet-panel, .metric-card { border-radius: var(--radius-lg); }
+
+/* Larger, calmer page headings for every view's own header. */
+section > div > .eyebrow + h1.panel-title, .you-heading h1 { margin-top: 0.35rem; }
+.you-heading .food-card-icon { width: 3rem; height: 3rem; border-radius: 1rem; }
+
+/* ===================== 14. Dashboard feature-card visuals ===================== */
+.feature-card-media > .campus-rotator, .feature-card-media > .food-collage-card, .feature-card-media > .trajectory-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.campus-rotator { display: block; overflow: hidden; background: var(--surface-muted); }
+.campus-rotator-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 1.8s ease-in-out; will-change: opacity; }
+.campus-rotator-layer.is-active { opacity: 1; }
+.campus-rotator-layer img { filter: var(--photo-filter); transform: scale(1.02); transition: transform 30s linear; }
+.campus-rotator-layer.is-active img { transform: scale(1.09); }
+.feature-card:hover .campus-rotator-layer.is-active img { transform: scale(1.11); transition: transform 1.2s var(--ease-out); }
+.campus-rotator-place { position: absolute; left: 0.75rem; bottom: 0.7rem; z-index: 2; padding: 0.2rem 0.6rem; border-radius: 9999px; background: rgb(8 12 36 / 0.6); color: #fff; font-size: 0.72rem; font-weight: 700; backdrop-filter: blur(6px); }
+
+.food-collage-card { display: grid; grid-template-columns: 1.45fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; background: #0b1236; }
+.food-collage-main { position: relative; grid-row: span 2; overflow: hidden; }
+.food-collage-main img, .food-collage-tile img { transition: transform 900ms var(--ease-out); }
+.feature-card:hover .food-collage-main img { transform: scale(1.06); }
+.food-collage-tile { position: relative; overflow: hidden; height: 100%; aspect-ratio: auto !important; border-radius: 0 !important; }
+.food-collage-tile .campus-photo-label { display: none; }
+.feature-card-media-food-nearby::after { background: linear-gradient(180deg, transparent 55%, rgb(8 12 36 / 0.35)) !important; }
+
+.trajectory-art { display: block; }
+.trajectory-art-line { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
+.trajectory-art-halo { animation: marker-pulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .feature-card:hover .trajectory-art-line { animation: art-draw 1.6s var(--ease-out) both; }
+}
+@keyframes art-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .campus-rotator-layer { transition: none; }
+  .campus-rotator-layer img, .campus-rotator-layer.is-active img { transform: none; transition: none; }
+  .trajectory-art-halo { animation: none; }
+}
+
+/* ===================== 15. Line-aware chart dot ===================== */
+.chart-marker { --series: var(--chart-projected); pointer-events: none; }
+.chart-marker.is-settling { transition: transform 240ms var(--ease-out); }
+.chart-marker-ring {
+  fill: var(--surface);
+  stroke: var(--series);
+  filter: drop-shadow(0 0 6px var(--series)) drop-shadow(0 2px 3px rgb(var(--shadow-rgb) / 0.35));
+  transition: stroke 240ms ease;
+}
+.chart-marker-core { fill: var(--series); transition: fill 240ms ease; }
+.chart-series { transition: stroke-width 200ms ease; }
+.chart-swatch { display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: 0.4rem; border-radius: 9999px; background: var(--series, var(--chart-projected)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--series, var(--chart-projected)) 22%, transparent), 0 0 10px var(--series, var(--chart-projected)); vertical-align: -0.05rem; }
+.chart-tooltip-active { display: flex; align-items: center; gap: 0.15rem; padding-bottom: 0.25rem; margin-bottom: 0.15rem; border-bottom: 1px solid var(--border); }
+.chart-play { color: var(--series, var(--primary)); border-color: color-mix(in srgb, var(--series, var(--chart-projected)) 40%, var(--border)); background: color-mix(in srgb, var(--series, var(--chart-projected)) 9%, var(--surface)); }
+@media (prefers-reduced-motion: reduce) {
+  .chart-marker.is-settling, .chart-marker-ring, .chart-marker-core, .chart-series { transition: none; }
+}
+/* Collage tiles sit in the grid (the generic card rule positions campus photos absolutely). */
+.feature-card-media .food-collage-card .food-collage-tile { position: relative; inset: auto; width: 100%; height: 100%; }
+/* Keep the trajectory illustration rich: only a whisper of the card's lower sweep. */
+.feature-card-media-spending-trajectory::after { opacity: 0.25; }

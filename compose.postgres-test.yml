@@ -1,0 +1,34 @@
+# Disposable PostgreSQL for backend/tests/test_postgres_integration.py only.
+#
+# - Bound to 127.0.0.1:5434 so it is unreachable from other hosts and does not
+#   collide with a default PostgreSQL on 5432.
+# - Data lives on tmpfs: `docker compose -f compose.postgres-test.yml down`
+#   destroys every row, including anything a crashed test left behind.
+# - The password is never committed; export TRITONSPEND_TEST_PG_PASSWORD first.
+# - On first initialization, postgres/init/01-disposable-marker.sql comments the
+#   database; the integration tests refuse to write unless that comment matches.
+#
+# See HANDOFF.md, "Disposable PostgreSQL integration-test environment".
+name: tritonspend-postgres-test
+
+services:
+  postgres:
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: tritonspend
+      POSTGRES_DB: tritonspend_test
+      POSTGRES_PASSWORD: ${TRITONSPEND_TEST_PG_PASSWORD:?export TRITONSPEND_TEST_PG_PASSWORD before using this file}
+    ports:
+      - "127.0.0.1:5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./backend/tests/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # TCP check: during initialization the temporary server listens only on
+      # the Unix socket, so this passes only after init scripts have finished.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "tritonspend", "-d", "tritonspend_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: "no"
