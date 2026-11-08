@@ -5,7 +5,7 @@ import { KeyboardEvent, useRef, useState } from "react";
 import { THEMES, Theme } from "../lib/theme";
 import { useTheme } from "./theme-provider";
 
-const labels: Record<Theme, { short: string; full: string; note: string }> = {
+export const THEME_LABELS: Record<Theme, { short: string; full: string; note: string }> = {
   classic: { short: "Classic", full: "Classic Triton", note: "Light + blue" },
   midnight: { short: "Midnight", full: "Midnight Triton", note: "Deep navy" },
   formal: { short: "Formal", full: "Formal Triton", note: "Warm sand" },
@@ -67,14 +67,14 @@ export function ThemeSwitcher() {
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={`${labels[value].full} theme`}
-            title={`${labels[value].full} · ${labels[value].note}`}
+            aria-label={`${THEME_LABELS[value].full} theme`}
+            title={`${THEME_LABELS[value].full} · ${THEME_LABELS[value].note}`}
             tabIndex={selected ? 0 : -1}
             className="theme-slider-option"
             onClick={() => select(value)}
             onKeyDown={(event) => onKeyDown(event, index)}
           >
-            <span>{labels[value].short}</span>
+            <span>{THEME_LABELS[value].short}</span>
           </button>
         );
       })}

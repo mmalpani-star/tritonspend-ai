@@ -78,7 +78,8 @@ function WarningSettings({ data, onSaved }: { data: WalletStatus; onSaved: () =>
   );
 }
 
-function DataControls() {
+/** Download or delete everything saved for the account. Also shown in Settings. */
+export function DataControls() {
   const [deleted, setDeleted] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -92,7 +93,12 @@ function DataControls() {
   }
 
   async function remove() {
-    if (!window.confirm("Delete your participant data? This removes your account login, saved wallet balances, warning amounts, saved forecasts, and any older spending records. This cannot be undone.")) return;
+    if (!window.confirm(
+      "Delete your participant data? This removes your account login, saved wallet balances, warning amounts, saved forecasts, and any older spending records.\n\n"
+      + "Your Food Chat venue ratings, chat messages and reports, your Food Chat name and your saved favourite venues and dishes are permanently deleted too. "
+      + "Any older reviews, comments and votes you made are deleted as well (deleting a review deletes the discussion under it; other people's replies to your comments stay)."
+      + "\n\nThis cannot be undone."
+    )) return;
     setMessage("");
     try {
       await deleteParticipantData();

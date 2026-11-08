@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  ArrowLeft, Check, ChevronDown, Clock, CreditCard, ExternalLink, HelpCircle, Info, LocateFixed, Loader2, MapPin,
-  Search, Store, UtensilsCrossed, WalletCards, X
+  ArrowLeft, Check, ChevronDown, ChevronRight, Clock, CreditCard, ExternalLink, HelpCircle, Info, LocateFixed, Loader2, MapPin,
+  MessageSquare, Search, ShieldCheck, Store, UtensilsCrossed, WalletCards, X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { listParticipantForecasts, readPrediction } from "../lib/api";
+import { listParticipantForecasts, readFoodMe, readFoodVenues, readPrediction } from "../lib/api";
 import { CAMPUS_LANDMARKS } from "../lib/campus-landmarks";
 import { campusToday, formatCalendarDate } from "../lib/datetime";
 import { VENUES, VENUES_VERIFIED_ON } from "../lib/food-venues-data";
@@ -15,7 +15,13 @@ import {
 } from "../lib/food-venues";
 import type { Account } from "../lib/types";
 import { formatMoney, useWallet } from "../lib/wallet";
-import { RotatingFoodPhoto } from "./visual/rotating-food-photo";
+import { FoodMe, FoodRoute, RatingSummary, formatVenueAverage, ratedByLabel } from "../lib/food-chat";
+import { DishPage, ModerationPage, StationPage, VenuePage } from "./food/food-pages";
+import { OfficialMenuLink, Stars, useFoodRoute } from "./food/food-ui";
+import { EXTERNAL_LINK, officialUrl, venueMenuLink } from "../lib/menu-links";
+import { FoodMosaic, VenueCover } from "./food/food-media";
+import { FoodPhotoId, coverPhotos, foodCategories } from "../lib/food-photos";
+import { FavoriteButton } from "./account/favorites";
 
 const WALLETS: Account[] = ["dining_dollars", "triton_cash"];
 const CATEGORIES: { value: VenueCategory; label: string }[] = [
@@ -146,21 +152,44 @@ function placeLine(view: VenueView): string {
   return parts.length > 0 ? parts.join(" · ") : "On campus";
 }
 
-function VenueCard({ view, preferred, targets }: { view: VenueView; preferred: Account[]; targets: DailyTargets | null }) {
+const venueTexts = (venue: VenueView["venue"]) => [venue.name, venue.summary, venue.description, ...venue.tags, ...venue.stations];
+
+function VenueCard({ view, preferred, targets, rating, cover, onOpen }: {
+  view: VenueView;
+  cover?: FoodPhotoId;
+  preferred: Account[];
+  targets: DailyTargets | null;
+  rating: RatingSummary | undefined;
+  onOpen: (route: FoodRoute) => void;
+}) {
   const { venue, wallets, open, meters } = view;
   const reasons = whyReasons(view, preferred, targets, formatMoney);
   const Icon = venue.operator === "triton_cash_partner" ? CreditCard : venue.kind === "market" ? Store : UtensilsCrossed;
   const kindLabel = venue.operator === "hdh" ? (venue.kind === "market" ? "Campus market" : "Campus dining") : "Triton Cash merchant";
-  const link = venue.links.menu ? { href: venue.links.menu, label: venue.operator === "hdh" && venue.links.menu.includes("Venue_V3") ? "Today's menu" : "HDH page" } : venue.links.website ? { href: venue.links.website, label: "Website" } : null;
+  const menuLink = venueMenuLink({ name: venue.name, operator: venue.operator, menuUrl: venue.links.menu });
+  const website = menuLink ? null : officialUrl(venue.links.website);
   return (
     <article className="food-card" aria-labelledby={`venue-${venue.id}`}>
+      <VenueCover placeKey={venue.id} texts={venueTexts(venue)} kind={venue.kind} photoId={cover} />
+      <div className="food-card-body">
       <div className="flex items-start gap-3">
         <span className="food-card-icon"><Icon size={19} aria-hidden="true" /></span>
         <div className="min-w-0 flex-1">
-          <h3 id={`venue-${venue.id}`} className="food-card-title">{venue.name}</h3>
+          <h3 id={`venue-${venue.id}`} className="food-card-title">
+            <button type="button" className="food-card-title-link" onClick={() => onOpen({ page: "venue", venueId: venue.id })}>{venue.name}</button>
+          </h3>
           <p className="food-card-kind">{kindLabel}{venue.summary ? ` · ${venue.summary}` : ""}</p>
+          {rating && (
+            <p className="food-rating-line mt-1" aria-label={`Student rating: ${formatVenueAverage({ average_rating: rating.average_rating, rating_count: rating.review_count })}`}>
+              <Stars value={rating.average_rating} size={14} />
+              <span className="food-muted">{rating.review_count ? `${formatVenueAverage({ average_rating: rating.average_rating, rating_count: rating.review_count })} · ${ratedByLabel(rating.review_count)}` : "No ratings yet"}</span>
+            </p>
+          )}
         </div>
-        {meters !== null && <span className="food-distance" title="Straight-line distance">{formatDistance(meters)}</span>}
+        <div className="flex shrink-0 items-center gap-2">
+          {meters !== null && <span className="food-distance" title="Straight-line distance">{formatDistance(meters)}</span>}
+          <FavoriteButton kind="venue" id={venue.id} name={venue.name} />
+        </div>
       </div>
       <p className="food-card-line"><MapPin size={14} aria-hidden="true" /> {placeLine(view)}</p>
       <p className={`food-card-line food-open-${open.status}`}><Clock size={14} aria-hidden="true" /> {describeOpenState(open)}</p>
@@ -173,12 +202,17 @@ function VenueCard({ view, preferred, targets }: { view: VenueView; preferred: A
           {reasons.map((reason) => <li key={reason.text} className={`food-why-${reason.tone}`}>{reason.text}</li>)}
         </ul>
       </details>
+      <button type="button" className="food-open-venue" onClick={() => onOpen({ page: "venue", venueId: venue.id })}>
+        <MessageSquare size={14} aria-hidden="true" /> Ratings, chat &amp; stations <ChevronRight size={14} aria-hidden="true" />
+      </button>
       <div className="food-card-actions">
-        {link && <a className="food-link" href={link.href} target="_blank" rel="noreferrer">{link.label} <ExternalLink size={13} aria-hidden="true" /></a>}
+        {menuLink && <OfficialMenuLink link={menuLink} />}
+        {website && <a className="food-link" href={website} {...EXTERNAL_LINK}>Website <ExternalLink size={13} aria-hidden="true" /></a>}
         <details className="food-details">
           <summary>Details</summary>
           <VenueDetails view={view} />
         </details>
+      </div>
       </div>
     </article>
   );
@@ -226,7 +260,14 @@ function VenueDetails({ view }: { view: VenueView }) {
 // ---------------------------------------------------------------------------------------------
 // Page
 
-export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBack: () => void; onOpenForecast: () => void; onOpenWallet: () => void }) {
+function VenueDirectory({ onBack, onOpenForecast, onOpenWallet, onOpen, ratings, me }: {
+  onBack: () => void;
+  onOpenForecast: () => void;
+  onOpenWallet: () => void;
+  onOpen: (route: FoodRoute) => void;
+  ratings: Record<string, RatingSummary>;
+  me: FoodMe | null;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<VenueCategory>("all");
   const [wallets, setWallets] = useState<Account[]>([]);
@@ -242,9 +283,18 @@ export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBac
   }, []);
 
   const origin = location.state.status === "ready" ? location.state.origin : null;
+  const openCount = useMemo(
+    () => visibleVenues(VENUES, { query: "", category: "all", wallets: [], openNow: true }, campusClock(now), null).length,
+    [now]
+  );
   const views = useMemo(
     () => visibleVenues(VENUES, { query, category, wallets, openNow }, campusClock(now), origin),
     [query, category, wallets, openNow, now, origin]
+  );
+  // Cover photos in list order, so neighbouring cards never share a photo.
+  const covers = useMemo(
+    () => coverPhotos(views.map(({ venue }) => ({ key: venue.id, categories: foodCategories(venueTexts(venue), venue.kind) }))),
+    [views]
   );
   const targets = budget.status === "ready" ? budget.targets : null;
   const toggleWallet = (wallet: Account) => setWallets((current) => (current.includes(wallet) ? current.filter((w) => w !== wallet) : [...current, wallet]));
@@ -259,30 +309,35 @@ export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBac
 
   return (
     <section aria-labelledby="food-title" className="space-y-5">
-      <button type="button" className="secondary-button" onClick={onBack}><ArrowLeft size={14} aria-hidden="true" /> Back to dashboard</button>
-
-      <header className="food-hero">
-        <div className="food-hero-copy">
-          <p className="campus-hero-eyebrow">Food Nearby</p>
-          <h1 id="food-title" className="food-hero-title">Find your next meal.</h1>
-          <p className="food-hero-text">Good food, student-friendly prices, and the right wallet.</p>
-        </div>
-        <div className="food-hero-photo" aria-hidden="true">
-          <RotatingFoodPhoto photos={["salmonPokeBowl", "margheritaPizza", "shoyuRamen", "italianSandwich"]} sizes="16rem" className="aspect-[4/3]" />
-        </div>
-      </header>
-
-      <div className="food-search-row">
-        <label className="food-search">
-          <Search size={18} aria-hidden="true" />
-          <span className="sr-only">Search food or places</span>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search pizza, ramen, coffee, Price Center…" autoComplete="off" />
-        </label>
-        <button type="button" className="food-locate" onClick={location.locate} disabled={location.state.status === "locating"}>
-          {location.state.status === "locating" ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <LocateFixed size={17} aria-hidden="true" />}
-          {location.state.status === "locating" ? "Finding you…" : origin && location.state.status === "ready" && location.state.fromDevice ? "Update location" : "Use my current location"}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <button type="button" className="secondary-button" onClick={onBack}><ArrowLeft size={14} aria-hidden="true" /> Back to dashboard</button>
+        {me?.is_moderator && <button type="button" className="secondary-button" onClick={() => onOpen({ page: "moderation" })}><ShieldCheck size={14} aria-hidden="true" /> Moderation</button>}
       </div>
+
+      <header className="stage food-stage">
+        <div>
+          <p className="stage-eyebrow">Food Nearby</p>
+          <h1 id="food-title" className="stage-title mt-4">Find your <em>next meal.</em></h1>
+          <p className="stage-lede mt-4">Good food, student-friendly prices, and the right wallet — every campus dining spot and Triton Cash partner in one place.</p>
+          <div className="food-search-row">
+            <label className="food-search">
+              <Search size={18} aria-hidden="true" />
+              <span className="sr-only">Search food or places</span>
+              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search pizza, ramen, coffee, Price Center…" autoComplete="off" />
+            </label>
+            <button type="button" className="food-locate" onClick={location.locate} disabled={location.state.status === "locating"}>
+              {location.state.status === "locating" ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <LocateFixed size={17} aria-hidden="true" />}
+              {location.state.status === "locating" ? "Finding you…" : origin && location.state.status === "ready" && location.state.fromDevice ? "Update location" : "Use my current location"}
+            </button>
+          </div>
+          <dl className="food-stage-stats">
+            <div><dt className="sr-only">Places</dt><dd><strong>{VENUES.length}</strong> places to eat</dd></div>
+            <div><dt className="sr-only">Open now</dt><dd><strong>{openCount}</strong> open right now</dd></div>
+            <div><dt className="sr-only">Wallets</dt><dd><strong>2</strong> wallets compared</dd></div>
+          </dl>
+        </div>
+        <FoodMosaic ids={["salmonPokeBowl", "tacos", "galaxySmoothieBowl", "gourmetPizza", "matchaBubbleTea"]} />
+      </header>
 
       <div aria-live="polite">
         {location.state.status === "ready" && (
@@ -340,7 +395,7 @@ export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBac
         </div>
       ) : (
         <div className="food-grid">
-          {views.map((view) => <VenueCard key={view.venue.id} view={view} preferred={wallets} targets={targets} />)}
+          {views.map((view) => <VenueCard key={view.venue.id} view={view} preferred={wallets} targets={targets} rating={ratings[view.venue.id]} cover={covers[view.venue.id]} onOpen={onOpen} />)}
         </div>
       )}
 
@@ -357,6 +412,41 @@ export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBac
           Sources: {Object.values(VENUE_SOURCES).map((source, index) => <span key={source.url}>{index > 0 && " · "}<a className="food-link" href={source.url} target="_blank" rel="noreferrer">{source.label}</a></span>)}
         </p>
       </details>
+    </section>
+  );
+}
+
+/** Food Nearby: the venue directory, plus venue, station, dish and moderation pages (URL hash routes). */
+export function FoodNearbyView({ onBack, onOpenForecast, onOpenWallet }: { onBack: () => void; onOpenForecast: () => void; onOpenWallet: () => void }) {
+  const [route, go] = useFoodRoute();
+  const [me, setMe] = useState<FoodMe | null>(null);
+  const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
+
+  useEffect(() => {
+    // Both are optional extras: the directory works without them.
+    readFoodMe().then(setMe).catch(() => setMe(null));
+  }, []);
+  useEffect(() => {
+    if (route.page !== "list") return;
+    let active = true;
+    readFoodVenues()
+      .then((data) => active && setRatings(Object.fromEntries(data.venues.map((venue) => [venue.id, venue.rating]))))
+      .catch(() => active && setRatings({}));
+    return () => { active = false; };
+  }, [route.page]);
+
+  if (route.page === "list") {
+    return <VenueDirectory onBack={onBack} onOpenForecast={onOpenForecast} onOpenWallet={onOpenWallet} onOpen={go} ratings={ratings} me={me} />;
+  }
+  return (
+    <section className="space-y-5" aria-label="Food Nearby">
+      <button type="button" className="secondary-button" onClick={() => window.history.length > 1 ? window.history.back() : go({ page: "list" })}>
+        <ArrowLeft size={14} aria-hidden="true" /> Back
+      </button>
+      {route.page === "venue" && <VenuePage venueId={route.venueId} me={me} onOpen={go} />}
+      {route.page === "station" && <StationPage stationId={route.stationId} onOpen={go} />}
+      {route.page === "dish" && <DishPage itemId={route.itemId} me={me} onOpen={go} />}
+      {route.page === "moderation" && <ModerationPage me={me} onOpen={go} />}
     </section>
   );
 }

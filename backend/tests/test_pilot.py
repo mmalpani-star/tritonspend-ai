@@ -307,7 +307,7 @@ def test_export_contains_only_participant_data_and_allows_withdrawn_consent(monk
         response = client.get("/api/v1/pilot/export")
         assert response.status_code == 200
         body = response.json()
-        assert body["schema_version"] == "stage5.v1"
+        assert body["schema_version"] == "stage8.v1"
         assert len(body["balance_checkins"]) == 1
         assert body["ledger_entries"][0]["entry_type"] == "refund"
         assert len(body["zero_spending_confirmations"]) == 1
@@ -466,13 +466,15 @@ def test_delete_failure_rolls_back_data_changes(monkeypatch):
                 session.close()
 
         app.dependency_overrides[get_db] = failing_db
-        with pytest.raises(RuntimeError, match="commit failed"):
-            client.request(
-                "DELETE",
-                "/api/v1/pilot/account",
-                json={"confirmation": "DELETE_MY_DATA"},
-                headers={"X-CSRF-Token": csrf},
-            )
+        # The failure reaches the browser as a JSON 500 (see main._unhandled_errors_as_json).
+        response = client.request(
+            "DELETE",
+            "/api/v1/pilot/account",
+            json={"confirmation": "DELETE_MY_DATA"},
+            headers={"X-CSRF-Token": csrf},
+        )
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Internal server error"}
         with factory() as session:
             assert session.query(BalanceCheckin).count() == 1
             assert session.query(Participant).one().deleted_at is None

@@ -1,9 +1,11 @@
 // Food Nearby stage 1: eligibility rules, catalog integrity, distance, hours, filtering, and explanations.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { CAMPUS_LANDMARKS } from "./campus-landmarks.ts";
-import { VENUES } from "./food-venues-data.ts";
+import { VENUES, VENUES_VERIFIED_ON } from "./food-venues-data.ts";
 import {
+  VENUE_SOURCES,
   campusClock, describeOpenState, distanceTo, formatDistance, haversineMeters, idealDailyTargets,
   openState, visibleVenues, walletEligibility, whyReasons
 } from "./food-venues.ts";
@@ -149,4 +151,13 @@ test("daily target is the ideal line's slope for a current saved forecast only",
   assert.equal(idealDailyTargets(prediction, "2026-12-09"), null); // forecast already ended
   assert.equal(idealDailyTargets({ ...prediction, comparison: null }, "2026-10-30"), null);
   assert.equal(idealDailyTargets({ ...prediction, horizon: { ...prediction.horizon, rule: "default" } }, "2026-10-30"), null);
+});
+
+test("the frontend copy matches the backend's authoritative catalog exactly", () => {
+  // backend/app/data/food_catalog.json is the source of truth; this copy goes away once the page reads the API.
+  const catalog = JSON.parse(readFileSync(new URL("../../backend/app/data/food_catalog.json", import.meta.url), "utf8"));
+  assert.equal(catalog.verified_on, VENUES_VERIFIED_ON);
+  assert.deepEqual(catalog.sources, VENUE_SOURCES);
+  assert.deepEqual(catalog.venues.map(({ wallets, ...venue }) => venue), VENUES);
+  for (const { wallets, ...venue } of catalog.venues) assert.deepEqual(wallets, walletEligibility(venue), venue.id);
 });

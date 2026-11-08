@@ -25,6 +25,8 @@ class Settings:
     session_secret: str = ""
     csrf_secret: str = ""
     cors_origins: tuple[str, ...] = ()
+    # Food Chat moderators, by account email (lowercase). Server configuration only; empty by default.
+    food_moderator_emails: tuple[str, ...] = ()
 
 
 def load_settings(environ: Optional[dict[str, str]] = None) -> Settings:
@@ -47,6 +49,7 @@ def load_settings(environ: Optional[dict[str, str]] = None) -> Settings:
             else "sqlite:///./tritonspend.db"
         )
     _validate_database_url(database_url, environment)
+    database_url = _with_installed_postgres_driver(database_url)
 
     timezone = values.get("TRITONSPEND_TIMEZONE", "America/Los_Angeles").strip()
     if timezone != "America/Los_Angeles":
@@ -58,6 +61,8 @@ def load_settings(environ: Optional[dict[str, str]] = None) -> Settings:
     csrf_secret = values.get("TRITONSPEND_CSRF_SECRET", "").strip()
     cors_value = values.get("TRITONSPEND_CORS_ORIGINS", "").strip()
     cors_origins = tuple(origin.strip().rstrip("/") for origin in cors_value.split(",") if origin.strip())
+    moderator_value = values.get("TRITONSPEND_FOOD_MODERATOR_EMAILS", "")
+    food_moderator_emails = tuple(sorted({email.strip().lower() for email in moderator_value.split(",") if email.strip()}))
     if environment == "production":
         for name, value in (
             ("TRITONSPEND_CONSENT_VERSION", consent_version),
@@ -111,6 +116,7 @@ def load_settings(environ: Optional[dict[str, str]] = None) -> Settings:
         session_secret=session_secret,
         csrf_secret=csrf_secret,
         cors_origins=cors_origins,
+        food_moderator_emails=food_moderator_emails,
     )
 
 
@@ -150,6 +156,19 @@ def _validate_database_url(database_url: str, environment: str) -> None:
         raise ConfigurationError("DATABASE_URL PostgreSQL URL must include a host")
     if not parsed.path or parsed.path == "/":
         raise ConfigurationError("DATABASE_URL PostgreSQL URL must include a database name")
+
+
+def _with_installed_postgres_driver(database_url: str) -> str:
+    """Point bare PostgreSQL URLs at psycopg 3, the driver this project installs.
+
+    Hosted providers such as Neon hand out ``postgresql://`` (or ``postgres://``) URLs.
+    SQLAlchemy maps the bare scheme to psycopg2, which is not a dependency, and rejects
+    ``postgres://`` outright, so both are rewritten. Explicit driver choices are kept.
+    """
+    scheme, separator, rest = database_url.partition("://")
+    if separator and scheme.lower() in {"postgresql", "postgres"}:
+        return f"postgresql+psycopg://{rest}"
+    return database_url
 
 
 def _is_origin(value: str, scheme: str) -> bool:

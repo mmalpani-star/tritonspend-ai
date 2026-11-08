@@ -6,6 +6,7 @@ import { themeInitScript } from "../lib/theme";
 import "./globals.css";
 import "./ui.css";
 import "./visual.css";
+import "./redesign.css";
 
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });

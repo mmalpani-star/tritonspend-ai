@@ -246,3 +246,7 @@ class ParticipantSession(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+# Food Nearby tables share this metadata (imported last: food_models uses _id and _now above).
+from . import food_models  # noqa: E402,F401

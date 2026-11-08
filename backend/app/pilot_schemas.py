@@ -164,8 +164,89 @@ class PilotDataResponse(BaseModel):
     ledger_entries: list[LedgerEntryResponse]
 
 
+class FoodReviewExportItem(BaseModel):
+    id: str
+    target_type: str
+    venue_id: str
+    station_id: Optional[str] = None
+    menu_item_id: Optional[str] = None
+    rating: int
+    body: str
+    moderation_state: str
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class FoodCommentExportItem(BaseModel):
+    id: str
+    review_id: str
+    parent_id: Optional[str] = None
+    body: str
+    moderation_state: str
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class FoodCommentVoteExportItem(BaseModel):
+    comment_id: str
+    value: int
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class FoodReportExportItem(BaseModel):
+    message_id: Optional[str] = None
+    review_id: Optional[str] = None
+    comment_id: Optional[str] = None
+    reason: str
+    details: Optional[str] = None
+    status: str
+    created_at: UtcDateTime
+
+
+class FoodFavoriteVenueExportItem(BaseModel):
+    venue_id: str
+    created_at: UtcDateTime
+
+
+class FoodFavoriteDishExportItem(BaseModel):
+    menu_item_id: str
+    created_at: UtcDateTime
+
+
+class FoodVenueRatingExportItem(BaseModel):
+    venue_id: str
+    rating: int
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class FoodChatMessageExportItem(BaseModel):
+    id: str
+    venue_id: str
+    body: str
+    moderation_state: str
+    created_at: UtcDateTime
+    updated_at: UtcDateTime
+
+
+class FoodChatExport(BaseModel):
+    """Everything this participant contributed to Food Chat, the pseudonym shown with it, and
+    their private favourites."""
+
+    display_name: Optional[str] = None
+    reviews: list[FoodReviewExportItem] = []
+    comments: list[FoodCommentExportItem] = []
+    comment_votes: list[FoodCommentVoteExportItem] = []
+    reports: list[FoodReportExportItem] = []
+    favorite_venues: list[FoodFavoriteVenueExportItem] = []
+    favorite_dishes: list[FoodFavoriteDishExportItem] = []
+    venue_ratings: list[FoodVenueRatingExportItem] = []
+    chat_messages: list[FoodChatMessageExportItem] = []
+
+
 class ParticipantExportResponse(BaseModel):
-    schema_version: Literal["stage5.v1"] = "stage5.v1"
+    schema_version: Literal["stage8.v1"] = "stage8.v1"
     participant: dict
     balance_checkins: list[BalanceCheckinResponse]
     ledger_entries: list[LedgerEntryResponse]
@@ -173,6 +254,7 @@ class ParticipantExportResponse(BaseModel):
     thresholds: Optional[BalanceThresholdRequest] = None
     consent_history: list[ConsentHistoryItem]
     forecast_snapshots: list[ForecastSnapshotExportItem]
+    food_chat: FoodChatExport = FoodChatExport()
 
 
 class ParticipantForecastRequest(BaseModel):

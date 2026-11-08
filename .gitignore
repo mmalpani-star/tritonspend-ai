@@ -18,6 +18,7 @@
 # Python generated files
 __pycache__/
 .pytest_cache/
+build/
 
 # Frontend dependencies and build output
 frontend/node_modules/

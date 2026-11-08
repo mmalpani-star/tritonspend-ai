@@ -1,6 +1,6 @@
 # Disposable PostgreSQL for backend/tests/test_postgres_integration.py only.
 #
-# - Bound to 127.0.0.1:5433 so it is unreachable from other hosts and does not
+# - Bound to 127.0.0.1:5434 so it is unreachable from other hosts and does not
 #   collide with a default PostgreSQL on 5432.
 # - Data lives on tmpfs: `docker compose -f compose.postgres-test.yml down`
 #   destroys every row, including anything a crashed test left behind.
@@ -19,7 +19,7 @@ services:
       POSTGRES_DB: tritonspend_test
       POSTGRES_PASSWORD: ${TRITONSPEND_TEST_PG_PASSWORD:?export TRITONSPEND_TEST_PG_PASSWORD before using this file}
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5434:5432"
     tmpfs:
       - /var/lib/postgresql/data
     volumes:

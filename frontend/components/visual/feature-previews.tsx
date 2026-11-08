@@ -14,7 +14,7 @@ export function FoodPreviewVisual() {
       </div>
       <SpectrumShape variant="arc" drift className="food-preview-arc" />
       <SpeckleField edge="top-right" count={60} seed={61} className="food-preview-speckles" />
-      <span className="food-chip food-chip-a" style={{ "--delay": "350ms" } as React.CSSProperties}>Food Chat<span>Dish reviews from students</span></span>
+      <span className="food-chip food-chip-a" style={{ "--delay": "350ms" } as React.CSSProperties}>Food Chat<span>Venue ratings and chat</span></span>
       <span className="food-chip food-chip-b" style={{ "--delay": "550ms" } as React.CSSProperties}>Meal prep vs. dining<span>Compare cost per meal</span></span>
     </div>
   );

@@ -4,7 +4,9 @@
  * public/campus/. Attribution is required for all of them and is rendered by
  * <PhotoCredits />. These are not official UC San Diego assets.
  */
-export type CampusPhotoId = "geiselLibrary" | "geiselDetail" | "priceCenterTriton" | "eucalyptusWalk" | "laJollaShores";
+export type CampusPhotoId =
+  | "geiselLibrary" | "geiselDetail" | "priceCenterTriton" | "eucalyptusWalk" | "laJollaShores"
+  | "priceCenterEast" | "warrenMall" | "libraryWalk" | "conradPrebys" | "scrippsPier";
 
 export type CampusPhoto = {
   src: string;
@@ -81,6 +83,71 @@ export const CAMPUS_PHOTOS: Record<CampusPhotoId, CampusPhoto> = {
       license: "CC BY-SA 4.0",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
       source: "https://commons.wikimedia.org/wiki/File:La_Jolla_Shores_from_Scripps_Pier.jpg"
+    }
+  },
+  priceCenterEast: {
+    src: "/campus/price-center-east.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Price Center East at UC San Diego, a glass and white-panel student center under a clear blue sky",
+    place: "Price Center",
+    credit: {
+      author: "Tktktk",
+      license: "CC BY 3.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/3.0",
+      source: "https://commons.wikimedia.org/wiki/File:Price_Center_East_-_North_Entrance,_UCSD.JPG"
+    }
+  },
+  warrenMall: {
+    src: "/campus/warren-mall.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Warren Mall at UC San Diego, a wide paved walkway lined with trees and lawns",
+    place: "Warren Mall",
+    credit: {
+      author: "Tktktk",
+      license: "CC BY 3.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/3.0",
+      source: "https://commons.wikimedia.org/wiki/File:Warren_Mall,_UCSD.JPG"
+    }
+  },
+  libraryWalk: {
+    src: "/campus/library-walk.jpg",
+    width: 1400,
+    height: 1040,
+    alt: "Library Walk at UC San Diego, a long pedestrian path through eucalyptus trees",
+    place: "Library Walk",
+    credit: {
+      author: "Znode at English Wikipedia",
+      license: "CC BY-SA 3.0",
+      licenseUrl: "http://creativecommons.org/licenses/by-sa/3.0/",
+      source: "https://commons.wikimedia.org/wiki/File:Ucsd-librarywalk.JPG"
+    }
+  },
+  conradPrebys: {
+    src: "/campus/conrad-prebys.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Students walking past the white colonnade of the Conrad Prebys Music Center at UC San Diego",
+    place: "Conrad Prebys Music Center",
+    credit: {
+      author: "Tktktk",
+      license: "CC BY 3.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/3.0",
+      source: "https://commons.wikimedia.org/wiki/File:Conrad_Prebys_Music_Center,_UCSD.JPG"
+    }
+  },
+  scrippsPier: {
+    src: "/campus/scripps-pier.jpg",
+    width: 1600,
+    height: 1001,
+    alt: "Shorebirds wading in front of the Scripps Pier at UC San Diego's Scripps Institution of Oceanography",
+    place: "Scripps Pier",
+    credit: {
+      author: "Mkeipper",
+      license: "CC BY-SA 3.0",
+      licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0",
+      source: "https://commons.wikimedia.org/wiki/File:Scripps_Pier_La_Jolla_CA.jpg"
     }
   }
 };

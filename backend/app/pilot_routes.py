@@ -31,6 +31,11 @@ from .participant_forecast import (
 )
 from .backtest import evaluate as evaluate_backtest
 from .personal_model import build_prediction, observations_from_checkins
+from .food_chat import delete_participant_food_chat
+from .food_models import (
+    FoodChatMessage, FoodChatProfile, FoodComment, FoodCommentVote, FoodFavoriteDish, FoodFavoriteVenue, FoodReport, FoodReview,
+    FoodVenueRating,
+)
 from .schemas import ForecastRequest
 from .models import (
     BalanceCheckin,
@@ -57,6 +62,7 @@ from .pilot_schemas import (
     DeleteParticipantRequest,
     DeleteParticipantResponse,
     ForecastSnapshotExportItem,
+    FoodChatExport,
     ForecastTrajectoryResponse,
     LedgerEntryRequest,
     LedgerEntryResponse,
@@ -287,6 +293,7 @@ def export_participant_data(
         .order_by(ForecastSnapshot.created_at, ForecastSnapshot.id)
     ).all()
     account = session.scalar(select(UserAccount).where(UserAccount.participant_id == participant.id))
+    food_chat = _food_chat_export(session, participant.id)
     response.headers["Content-Disposition"] = 'attachment; filename="tritonspend-data-export.json"'
     return ParticipantExportResponse(
         participant={
@@ -327,6 +334,60 @@ def export_participant_data(
             )
             for value in snapshots
         ],
+        food_chat=food_chat,
+    )
+
+
+def _food_chat_export(session: Session, participant_id: str) -> FoodChatExport:
+    """The participant's own Food Chat content, oldest first."""
+    def owned(model, tiebreak=None):
+        tiebreak = model.id if tiebreak is None else tiebreak
+        return session.scalars(
+            select(model).where(model.participant_id == participant_id).order_by(model.created_at, tiebreak)
+        ).all()
+
+    profile = session.get(FoodChatProfile, participant_id)
+    return FoodChatExport(
+        display_name=profile.display_name if profile else None,
+        reviews=[
+            {
+                "id": value.id, "target_type": value.target_type.value, "venue_id": value.venue_id,
+                "station_id": value.station_id, "menu_item_id": value.menu_item_id, "rating": value.rating,
+                "body": value.body, "moderation_state": value.moderation_state.value,
+                "created_at": value.created_at, "updated_at": value.updated_at,
+            }
+            for value in owned(FoodReview)
+        ],
+        comments=[
+            {
+                "id": value.id, "review_id": value.review_id, "parent_id": value.parent_id, "body": value.body,
+                "moderation_state": value.moderation_state.value, "created_at": value.created_at,
+                "updated_at": value.updated_at,
+            }
+            for value in owned(FoodComment)
+        ],
+        comment_votes=[
+            {"comment_id": value.comment_id, "value": value.value, "created_at": value.created_at, "updated_at": value.updated_at}
+            for value in owned(FoodCommentVote)
+        ],
+        reports=[
+            {
+                "message_id": value.message_id, "review_id": value.review_id, "comment_id": value.comment_id, "reason": value.reason.value,
+                "details": value.details, "status": value.status.value, "created_at": value.created_at,
+            }
+            for value in owned(FoodReport)
+        ],
+        favorite_venues=[{"venue_id": value.venue_id, "created_at": value.created_at} for value in owned(FoodFavoriteVenue, FoodFavoriteVenue.venue_id)],
+        favorite_dishes=[{"menu_item_id": value.menu_item_id, "created_at": value.created_at} for value in owned(FoodFavoriteDish, FoodFavoriteDish.menu_item_id)],
+        venue_ratings=[
+            {"venue_id": value.venue_id, "rating": value.rating, "created_at": value.created_at, "updated_at": value.updated_at}
+            for value in owned(FoodVenueRating)
+        ],
+        chat_messages=[
+            {"id": value.id, "venue_id": value.venue_id, "body": value.body, "moderation_state": value.moderation_state.value,
+             "created_at": value.created_at, "updated_at": value.updated_at}
+            for value in owned(FoodChatMessage)
+        ],
     )
 
 
@@ -347,6 +408,10 @@ def delete_participant_account(
     already_deleted = participant.deleted_at is not None
     if not already_deleted:
         deleted_at = _utc_now()
+        # Food Chat policy: the participant's reviews (with their threads), comments, votes and
+        # reports, pseudonym, favourites, venue ratings and chat messages are permanently deleted;
+        # other people's replies are kept (see food_chat.py).
+        delete_participant_food_chat(session, participant.id)
         session.execute(
             delete(BalanceCheckin).where(BalanceCheckin.participant_id == participant.id)
         )

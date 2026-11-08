@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type DashboardView = "home" | "forecast" | "food-nearby" | "spending-trajectory" | "wallet";
+export type DashboardView = "home" | "forecast" | "food-nearby" | "spending-trajectory" | "wallet" | "you";
 
-/** The three product areas, in dashboard order. "home" and "wallet" are not product areas. */
+/** The three product areas, in dashboard order. "home", "wallet" and "you" (the sidebar's own pages) are not product areas. */
 export const PRODUCT_AREAS = [
   {
     view: "forecast",
@@ -26,12 +26,13 @@ export const PRODUCT_AREAS = [
   }
 ] as const satisfies ReadonlyArray<{ view: DashboardView; title: string; summary: string; status: "available" | "coming-soon" }>;
 
-const VIEWS: readonly DashboardView[] = ["home", "forecast", "food-nearby", "spending-trajectory", "wallet"];
+const VIEWS: readonly DashboardView[] = ["home", "forecast", "food-nearby", "spending-trajectory", "wallet", "you"];
 // Old links to the retired "My data" page land on Wallet & Alerts.
 const ALIASES: Record<string, DashboardView> = { "my-data": "wallet" };
 
 function viewFromHash(): DashboardView {
-  const hash = window.location.hash.slice(1);
+  // Sub-pages keep their view: "#food-nearby/venue/pines" is still Food Nearby.
+  const hash = window.location.hash.slice(1).split("/")[0];
   const value = ALIASES[hash] ?? hash;
   return (VIEWS as readonly string[]).includes(value) ? (value as DashboardView) : "home";
 }
@@ -50,6 +51,8 @@ export function useDashboardView(): [DashboardView, (next: DashboardView) => voi
   const navigate = useCallback((next: DashboardView) => {
     window.location.hash = next === "home" ? "" : next;
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // Re-selecting the current view (e.g. Food Nearby from one of its sub-pages) still resets it.
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   }, []);
 
   return [view, navigate];

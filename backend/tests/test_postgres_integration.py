@@ -40,12 +40,16 @@ from backend.app.models import (
     UserAccount,
     ZeroSpendingConfirmation,
 )
+from backend.app.food_catalog import menu_name_key, seed_food_catalog
+from backend.app.food_models import (
+    FOOD_USER_CONTENT_MODELS, FoodMenuItem, FoodReview, FoodStation, FoodVenue, FoodVenueRating, ReviewTarget,
+)
 from backend.app.security import hash_secret, make_secret, utc_now
 
 
-EXPECTED_REVISION = "20261029_0004"
+EXPECTED_REVISION = "20261108_0008"
 EXPECTED_HOST = "127.0.0.1"
-EXPECTED_PORT = 5433
+EXPECTED_PORT = 5434
 EXPECTED_DATABASE = "tritonspend_test"
 EXPECTED_USER = "tritonspend"
 EXPECTED_DATABASE_COMMENT = "tritonspend-disposable-test"
@@ -66,6 +70,8 @@ APPLICATION_MODELS = (
     ConsentEvent,
     ParticipantSession,
     UserAccount,
+    # Food Chat content is participant data too; the catalog tables may already be seeded.
+    *FOOD_USER_CONTENT_MODELS,
 )
 
 
@@ -89,7 +95,7 @@ def _integration_url() -> URL:
     ):
         pytest.fail(
             "PostgreSQL integration tests only permit "
-            "postgresql+psycopg://tritonspend@127.0.0.1:5433/tritonspend_test "
+            "postgresql+psycopg://tritonspend@127.0.0.1:5434/tritonspend_test "
             "without query parameters"
         )
     return url
@@ -415,6 +421,48 @@ def test_postgres_exports_and_deletes_only_the_authenticated_participant(postgre
                 ConsentEvent.participant_id == participant_id
             )
         ) == 1
+
+
+def test_postgres_food_catalog_seed_hierarchy_and_api(postgres_client):
+    """Catalog seeding, composite-key integrity and the public API on PostgreSQL (rolled back)."""
+    from sqlalchemy.exc import IntegrityError
+
+    client, factory = postgres_client
+    with factory() as session:
+        first = seed_food_catalog(session)
+        session.commit()
+        assert (first.venues_inserted, first.stations_inserted) == (68, 45)
+        again = seed_food_catalog(session)
+        session.commit()
+        assert (again.venues_unchanged, again.stations_unchanged) == (68, 45)
+        assert session.scalar(select(func.count()).select_from(FoodVenue).where(FoodVenue.hours.is_(None))) == 52
+
+        participant = Participant()
+        session.add(participant)
+        session.flush()
+        item = FoodMenuItem(
+            station_id="64-degrees--triton-grill", name="Chicken Rice Bowl", name_key=menu_name_key("Chicken Rice Bowl"),
+            source_url="https://hdh-web.ucsd.edu/dining/apps/diningservices", verified_at=utc_now(),
+        )
+        session.add(item)
+        session.flush()
+        with pytest.raises(IntegrityError):
+            with session.begin_nested():
+                session.add(FoodReview(
+                    participant_id=participant.id, target_type=ReviewTarget.menu_item, venue_id="pines",
+                    station_id=item.station_id, menu_item_id=item.id, rating=4, body="",
+                ))
+                session.flush()
+        session.add(FoodReview(participant_id=participant.id, target_type=ReviewTarget.venue, venue_id="pines", rating=4, body=""))
+        # Since 0008 a venue's stars come from venue ratings, not from the older written reviews.
+        session.add(FoodVenueRating(participant_id=participant.id, venue_id="pines", rating=4))
+        session.commit()
+        assert session.get(FoodStation, "pines--slice-at-pines").venue_id == "pines"
+
+    venues = client.get("/api/v1/food/venues", params={"operator": "hdh"}).json()
+    assert venues["total"] == 16
+    assert client.get("/api/v1/food/venues/pines").json()["rating"] == {"review_count": 1, "average_rating": 4.0}
+    assert client.get("/api/v1/food/stations/pines--slice-at-pines/menu-items").json()["menu_status"] == "no_verified_menu_data"
 
 
 def test_postgres_persists_participant_forecast_snapshots(postgres_client):

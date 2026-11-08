@@ -59,6 +59,23 @@ def test_configuration_accepts_supported_postgresql_urls():
     assert settings.database_url.startswith("postgresql+psycopg://")
 
 
+@pytest.mark.parametrize("scheme", ["postgresql", "postgres", "POSTGRESQL"])
+def test_bare_postgresql_urls_use_the_installed_psycopg_driver(scheme):
+    settings = load_settings(
+        {
+            "TRITONSPEND_ENV": "production",
+            "DATABASE_URL": f"{scheme}://user:password@ep-example.neon.tech/app?sslmode=require",
+            "TRITONSPEND_CONSENT_VERSION": "v1",
+            "TRITONSPEND_CONSENT_DOCUMENT_URL": "https://example.test/consent/v1",
+            "TRITONSPEND_SESSION_SECRET": "s" * 32,
+            "TRITONSPEND_CSRF_SECRET": "c" * 32,
+            "TRITONSPEND_CORS_ORIGINS": "https://app.example",
+            "TRITONSPEND_PUBLIC_ORIGIN": "https://app.example",
+        }
+    )
+    assert settings.database_url == "postgresql+psycopg://user:password@ep-example.neon.tech/app?sslmode=require"
+
+
 def test_production_rejects_missing_or_weak_secrets_and_insecure_origin():
     values = {
         "TRITONSPEND_ENV": "production",
@@ -168,6 +185,40 @@ def test_metadata_initializes_all_m1_tables_with_columns_constraints_and_indexes
         "user_accounts": {
             "id", "participant_id", "email", "password_hash", "created_at", "last_login_at",
         },
+        "food_venues": {
+            "id", "name", "operator", "kind", "summary", "description", "tags", "campus_area", "location", "on_campus", "latitude", "longitude", "coordinates_source", "hours", "menu_url", "website_url", "dining_dollars_acceptance", "dining_dollars_reason", "dining_dollars_source", "triton_cash_acceptance", "triton_cash_reason", "triton_cash_source", "sources", "notes", "catalog_version", "verified_on", "is_active", "created_at", "updated_at",
+        },
+        "food_stations": {
+            "id", "venue_id", "name", "menu_url", "hours", "sources", "catalog_version", "verified_on", "is_active", "created_at", "updated_at",
+        },
+        "food_menu_items": {
+            "id", "station_id", "name", "name_key", "description", "dietary_labels", "allergens", "source_url", "verified_at", "is_active", "created_at", "updated_at",
+        },
+        "food_menu_appearances": {
+            "id", "menu_item_id", "menu_date", "meal_period", "price_cents", "currency", "availability", "source_url", "retrieved_at", "last_verified_at", "created_at",
+        },
+        "food_reviews": {
+            "id", "participant_id", "target_type", "venue_id", "station_id", "menu_item_id", "rating", "body", "moderation_state", "created_at", "updated_at",
+        },
+        "food_comments": {
+            "id", "review_id", "parent_id", "participant_id", "body", "moderation_state", "created_at", "updated_at",
+        },
+        "food_comment_votes": {
+            "id", "comment_id", "participant_id", "value", "created_at", "updated_at",
+        },
+        "food_reports": {
+            "id", "participant_id", "review_id", "comment_id", "message_id", "reason", "details", "status", "created_at", "resolved_at",
+        },
+        "food_chat_profiles": {
+            "participant_id", "display_name", "created_at",
+        },
+        "food_moderation_actions": {
+            "id", "moderator_participant_id", "action", "target_type", "target_id", "note", "created_at",
+        },
+        "food_favorite_venues": {"participant_id", "venue_id", "created_at"},
+        "food_favorite_dishes": {"participant_id", "menu_item_id", "created_at"},
+        "food_venue_ratings": {"id", "participant_id", "venue_id", "rating", "created_at", "updated_at"},
+        "food_chat_messages": {"id", "venue_id", "participant_id", "body", "moderation_state", "created_at", "updated_at"},
     }
     assert set(database.get_table_names()) == set(expected_columns)
     for table_name, columns in expected_columns.items():
@@ -191,6 +242,29 @@ def test_metadata_initializes_all_m1_tables_with_columns_constraints_and_indexes
             (key["constrained_columns"][0], key["referred_table"], key["referred_columns"][0])
             for key in database.get_foreign_keys(table_name)
         ] == foreign_keys
+    # Food Nearby: composite keys keep stations inside venues, items inside stations,
+    # and replies inside their review's thread.
+    expected_food_foreign_keys = {
+        "food_venues": [],
+        "food_stations": [("venue_id", "food_venues", "id")],
+        "food_menu_items": [("station_id", "food_stations", "id")],
+        "food_menu_appearances": [("menu_item_id", "food_menu_items", "id")],
+        "food_reviews": [("station_id", "venue_id", "food_stations", "id", "venue_id"), ("menu_item_id", "station_id", "food_menu_items", "id", "station_id"), ("participant_id", "participants", "id"), ("venue_id", "food_venues", "id")],
+        "food_comments": [("parent_id", "review_id", "food_comments", "id", "review_id"), ("review_id", "food_reviews", "id"), ("participant_id", "participants", "id")],
+        "food_comment_votes": [("comment_id", "food_comments", "id"), ("participant_id", "participants", "id")],
+        "food_reports": [("participant_id", "participants", "id"), ("review_id", "food_reviews", "id"), ("comment_id", "food_comments", "id"), ("message_id", "food_chat_messages", "id")],
+        "food_chat_profiles": [("participant_id", "participants", "id")],
+        "food_moderation_actions": [("moderator_participant_id", "participants", "id")],
+        "food_favorite_venues": [("participant_id", "participants", "id"), ("venue_id", "food_venues", "id")],
+        "food_favorite_dishes": [("participant_id", "participants", "id"), ("menu_item_id", "food_menu_items", "id")],
+        "food_venue_ratings": [("participant_id", "participants", "id"), ("venue_id", "food_venues", "id")],
+        "food_chat_messages": [("venue_id", "food_venues", "id"), ("participant_id", "participants", "id")],
+    }
+    for table_name, foreign_keys in expected_food_foreign_keys.items():
+        assert sorted(
+            tuple(key["constrained_columns"]) + (key["referred_table"],) + tuple(key["referred_columns"])
+            for key in database.get_foreign_keys(table_name)
+        ) == sorted(foreign_keys)
 
     assert {index["name"] for index in database.get_indexes("ledger_entries")} == {
         "ix_ledger_entries_participant_id", "ix_ledger_entries_occurred_on",

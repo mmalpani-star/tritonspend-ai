@@ -144,23 +144,109 @@ GET    /api/v1/pilot/export
 DELETE /api/v1/pilot/account
 ```
 
-The export is a documented `stage5.v1` JSON object containing only the
+The export is a documented `stage8.v1` JSON object containing only the
 authenticated participant's balance check-ins, ledger entries, explicit
-zero-spending confirmations, configured thresholds, and consent-event history.
-It never includes invite-token, session, or CSRF hashes. The export response
+zero-spending confirmations, configured thresholds, consent-event history,
+forecast snapshots, and a `food_chat` section with their own Food Chat reviews,
+comments, comment votes, reports, pseudonym, favourite venues and dishes,
+venue ratings and chat messages. It never includes invite-token, session,
+or CSRF hashes. The export response
 also sets a JSON download filename.
 
 Account deletion requires the authenticated session, the `X-CSRF-Token`
 header, and the exact JSON body
 `{"confirmation":"DELETE_MY_DATA"}`. It transactionally removes that
 participant's check-ins, ledger entries, zero-spending confirmations,
-thresholds, forecast snapshots, legacy consent row, and invite associations;
-revokes all participant sessions and removes their CSRF hashes. The participant
+thresholds, forecast snapshots, legacy consent row, invite associations, and
+Food Chat contributions (below); revokes all participant sessions and removes
+their CSRF hashes. The participant
 row is retained with `deleted_at` and append-only `consent_events` are retained
 as the minimum consent audit record. Other participants are not affected.
 Deletion is not gated by active consent, so a participant may delete after
 withdrawing consent. The current session is revoked and the UI instructs the
 participant to use a new invitation if they need to sign in again.
+
+Food Chat contributions are permanently deleted with the account
+(`backend/app/food_chat.py: delete_participant_food_chat`), in the same
+transaction:
+
+- the participant's reviews, together with every comment in those review
+  threads (whoever wrote it) and the votes and reports on that content;
+- the participant's comments on other people's reviews, with the votes and
+  reports on those comments; other people's replies are kept and move up to
+  the nearest surviving comment in the same thread, or become top-level
+  comments on that review, so no reply is left orphaned;
+- every vote and report the participant made.
+
+Other participants' unrelated reviews, comments, votes, and reports are not
+changed. Note that deleting a review also deletes other people's replies in
+that review's thread, because the discussion belongs to the deleted review.
+
+## Food Nearby and Food Chat
+
+Food Nearby's catalog (`backend/app/data/food_catalog.json`, seeded with
+`backend/scripts/seed_food_catalog.py` after `alembic upgrade head`) is served
+read-only under `/api/v1/food` (venues, stations, menu items, dated menu
+appearances). Menu items are never invented: a station without verified items
+returns `menu_status: "no_verified_menu_data"`.
+
+Food Chat has two features (`backend/app/venue_chat_routes.py`):
+
+- **Venue star ratings**: `GET`/`PUT`/`DELETE /api/v1/food/venues/{id}/rating`
+  (`{"rating": 1-5}`). One current rating per student per venue (unique
+  constraint, table `food_venue_ratings`); changing it replaces it. The
+  response gives the exact average (to two decimals), how many students rated,
+  and the caller's own rating. Venue cards and venue detail use the same
+  numbers. There are no dish or station ratings.
+- **A group chat per venue**: `GET /venues/{id}/messages?limit=&before=`
+  (newest page, oldest first, `has_older` for "load older"),
+  `POST /venues/{id}/messages`, `PATCH`/`DELETE /messages/{id}` (own only),
+  reports with `POST /reports {"message_id": ...}`. Messages (table
+  `food_chat_messages`) are free text up to 1,000 characters, tied only to a
+  venue, flat and chronological; the app polls every 10 seconds.
+
+Authors appear only by a generated pseudonym; responses never contain emails or
+participant IDs. Moderators hide, restore or remove messages
+(`POST /moderation/messages/{id}`) from the same report queue.
+
+The older review/comment/vote API (`backend/app/food_chat_routes.py`) is no
+longer used by the app. Its records are kept (and still exported and deleted
+with an account); migration `20261108_0008` copied each student's visible
+venue-level review rating into `food_venue_ratings` and created no chat
+messages from old content.
+
+Every write requires the session cookie, the `X-CSRF-Token` header, and active
+consent; edits and deletions require ownership. Write limits per account are
+in-memory and per process (`backend/app/food_rate_limit.py`); they are not
+production-grade abuse protection.
+
+**Moderation.** Set `TRITONSPEND_FOOD_MODERATOR_EMAILS` to a comma-separated
+list of account emails (case-insensitive; empty by default, so nobody is a
+moderator). There is no API to change it. Moderators can list reports
+(`GET /api/v1/food/moderation/reports`), hide, restore or remove reviews and
+comments, resolve or dismiss reports, and read the moderation log
+(`GET /moderation/actions`). The log records who did what to which ID, never a
+copy of the content.
+
+**Your account, favourites and activity.** `backend/app/me_routes.py` serves
+the signed-in student's own pages under `/api/v1/me`; nothing there can
+return another participant's data:
+
+- `GET /account`: private email, account dates, time zone, consent status,
+  Food Chat pseudonym (generated here once consent is active), moderator flag
+  and activity counts.
+- `GET /favorites`, `PUT`/`DELETE /favorites/venues/{id}` and
+  `/favorites/dishes/{id}`: private saved venues and verified menu items
+  (tables `food_favorite_venues`, `food_favorite_dishes`; saving is
+  idempotent; changes need CSRF and active consent).
+- `GET /reviews` and `GET /comments`: the student's own reviews (including any
+  under moderation, with their state) and comments/replies with the review
+  each belongs to.
+
+Favourites are exported and deleted with the account. In the app, the Triton
+trident in the header opens a sidebar with Your Account, Favourite Dishes,
+Favourite Venues, Your Reviews, Your Discussions, Settings and Sign Out
+(routes `#you/<page>`).
 
 Run the tests with:
 

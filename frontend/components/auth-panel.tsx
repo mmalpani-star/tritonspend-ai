@@ -10,11 +10,12 @@ export type AuthRequest = { mode: AuthMode; at: number };
 type Mode = AuthMode;
 
 // compact: once signed in with consent, show a slim status bar instead of the full panel.
-type Props = { onStatusChange: (status: AuthStatus | null) => void; compact?: boolean; request?: AuthRequest | null };
+// signOutRequest: increments when another control (the sidebar's Sign Out) asks to sign out.
+type Props = { onStatusChange: (status: AuthStatus | null) => void; compact?: boolean; request?: AuthRequest | null; signOutRequest?: number };
 
 const MIN_PASSWORD_LENGTH = 8;
 
-export function AuthPanel({ onStatusChange, compact = false, request = null }: Props) {
+export function AuthPanel({ onStatusChange, compact = false, request = null, signOutRequest = 0 }: Props) {
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -101,6 +102,12 @@ export function AuthPanel({ onStatusChange, compact = false, request = null }: P
       setMessage(error instanceof Error ? error.message : "Unable to sign out.");
     }
   }
+
+  // The sidebar's Sign Out reuses this panel's sign-out, so both behave identically.
+  useEffect(() => {
+    if (signOutRequest > 0) void logout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per request, not when logout is recreated
+  }, [signOutRequest]);
 
   const who = status?.email ?? "pilot participant";
 

@@ -244,9 +244,9 @@ export function SpendingTrajectoryView({ onBack, onOpenForecast, onOpenWallet }:
             )}
           </section>
 
-          <div className="grid gap-5 xl:grid-cols-2">
+          <div className="space-y-6">
             {current.accounts.map((summary) => (
-              <div key={`${current.comparison?.id ?? "none"}-${summary.account}`} className="space-y-3">
+              <div key={`${current.comparison?.id ?? "none"}-${summary.account}`} className="trajectory-layout">
                 <PredictionChart prediction={current} account={summary.account} summary={summary} showPlan={planShown} />
                 <AccountSummary summary={summary} prediction={current} />
               </div>
